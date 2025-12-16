@@ -30,21 +30,23 @@ class SparqlService {
   }
 
   private function getSPARQLresults($sparqlQueryString, $offset = 0): ?array {
-    $cacheFile = CACHE_DIR . 'sparql/' . md5($sparqlQueryString . $offset) . ".json";
+#    $cacheFile = CACHE_DIR . 'sparql/' . md5($sparqlQueryString . $offset) . ".json";
 
-    if (file_exists($cacheFile) && !isset($_GET["nocache"])) {
-      $fileAge = time() - filemtime($cacheFile);
-      if ($fileAge < SPARQL_CACHE_DURATION_SECONDS) {
-        $contents = file_get_contents($cacheFile);
-      }
-    }
+#    if (file_exists($cacheFile) && !isset($_GET["nocache"])) {
+#      $fileAge = time() - filemtime($cacheFile);
+#      if ($fileAge < SPARQL_CACHE_DURATION_SECONDS) {
+#        $contents = file_get_contents($cacheFile);
+#      }
+#    }
 
-    if (!isset($contents)) {
+    $kv_key = md5($sparqlQueryString . $offset);
+    $contents = kv_get($kv_key);
+    if (!$contents) {
       $contents = $this->doSPARQLcall($sparqlQueryString, $offset);
       if ($contents === null) {
         return null;
       }
-      file_put_contents($cacheFile, $contents);
+      kv_put($kv_key, $contents);
     }
 
     $result = json_decode($contents, true);
@@ -55,6 +57,31 @@ class SparqlService {
 
     return $result;
   }
+
+  function kv_put($key, $value, $seconds = 259200) { // 3 Days default
+    $url = getenv('KV_REST_API_URL') . "/setex/$key/$seconds/" . urlencode($value);
+    $token = getenv('KV_REST_API_TOKEN');
+    
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token"]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_exec($ch);
+    curl_close($ch);
+}
+
+function kv_get($key) {
+    $url = getenv('KV_REST_API_URL') . "/get/$key";
+    $token = getenv('KV_REST_API_TOKEN');
+    
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token"]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    
+    $data = json_decode($response, true);
+    return $data['result'] ?? null; // Returns null if expired/not found
+}
 
   private function SPARQL($sparqlQueryString, $bLog = SPARQL_LOG): array {
     $sparqlQueryString = preg_replace('/  /', ' ', SPARQL_PREFIX . $sparqlQueryString);
