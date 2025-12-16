@@ -40,13 +40,13 @@ class SparqlService {
 #    }
 
     $kv_key = md5($sparqlQueryString . $offset);
-    $contents = kv_get($kv_key);
+    $contents = $this->kv_get($kv_key);
     if (!$contents) {
       $contents = $this->doSPARQLcall($sparqlQueryString, $offset);
       if ($contents === null) {
         return null;
       }
-      kv_put($kv_key, $contents);
+      $this->kv_put($kv_key, $contents);
     }
 
     $result = json_decode($contents, true);
@@ -58,7 +58,7 @@ class SparqlService {
     return $result;
   }
 
-  function kv_put($key, $value, $seconds = 259200) { // 3 Days default
+ private function kv_put($key, $value, $seconds = 259200) { // 3 Days default
     $url = getenv('KV_REST_API_URL') . "/setex/$key/$seconds/" . urlencode($value);
     $token = getenv('KV_REST_API_TOKEN');
     
@@ -69,7 +69,7 @@ class SparqlService {
     curl_close($ch);
 }
 
-function kv_get($key) {
+private function kv_get($key) {
     $url = getenv('KV_REST_API_URL') . "/get/$key";
     $token = getenv('KV_REST_API_TOKEN');
     
