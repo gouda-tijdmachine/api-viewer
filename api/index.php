@@ -18,16 +18,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $router = new Router();
 $apiHandler = new ApiHandler();
 
-$router->get('/api-viewer/fotos', [$apiHandler, 'getFotos']);
-$router->get('/api-viewer/foto/{identifier}', [$apiHandler, 'getFoto']);
-$router->get('/api-viewer/panden', [$apiHandler, 'getPanden']);
-$router->get('/api-viewer/pandgeometrieen/{jaar}', [$apiHandler, 'getJaarPanden']);
-$router->get('/api-viewer/pand/{identifier}', [$apiHandler, 'getPand']);
-$router->get('/api-viewer/personen', [$apiHandler, 'getPersonen']);
-$router->get('/api-viewer/persoon/{identifier}', [$apiHandler, 'getPersoon']);
-$router->get('/api-viewer/straten', [$apiHandler, 'getStraten']);
-$router->get('/api-viewer/tijdvakken', [$apiHandler, 'getTijdvakken']);
-$router->post('/api-viewer/clear_cache', [$apiHandler, 'clearCache']);
+$router->get('fotos', [$apiHandler, 'getFotos']);
+$router->get('foto/{identifier}', [$apiHandler, 'getFoto']);
+$router->get('panden', [$apiHandler, 'getPanden']);
+$router->get('pandgeometrieen/{jaar}', [$apiHandler, 'getJaarPanden']);
+$router->get('pand/{identifier}', [$apiHandler, 'getPand']);
+$router->get('personen', [$apiHandler, 'getPersonen']);
+$router->get('persoon/{identifier}', [$apiHandler, 'getPersoon']);
+$router->get('straten', [$apiHandler, 'getStraten']);
+$router->get('tijdvakken', [$apiHandler, 'getTijdvakken']);
+$router->post('clear_cache', [$apiHandler, 'clearCache']);
 
 try {
     $router->dispatch();
