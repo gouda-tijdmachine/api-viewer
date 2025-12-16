@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "https://www.goudatijdmachine.nl/api-viewer"
+            "url": "https://api-viewer-three.vercel.app"
         }
     ],
     "tags": [
