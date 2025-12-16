@@ -4,9 +4,16 @@
   },
   "routes": [
     {
-            "src": "/assets/(.*)",
-            "dest": "assets/$1"
+        "src": "/assets/(.*)",
+        "dest": "assets/$1"
     },
-    { "src": "/(.*)", "dest": "/api/index.php" }
+    {
+        "src": "/favicon\\.ico",
+        "dest": "assets/favicon.ico"
+    },
+    { 
+        "src": "/(.*)", 
+        "dest": "/api/index.php" 
+    }
   ]
 }
