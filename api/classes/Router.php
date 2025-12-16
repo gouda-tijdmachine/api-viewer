@@ -32,10 +32,10 @@ class Router
         $parsedUri = parse_url($requestUri);
         $path = $parsedUri['path'];
 
-        $basePath = '/viewer-api';
-        if (strpos($path, $basePath) === 0) {
-            $path = substr($path, strlen($basePath));
-        }
+        #$basePath = '/viewer-api';
+        #if (strpos($path, $basePath) === 0) {
+        #    $path = substr($path, strlen($basePath));
+        #}
 
         if (empty($path)) {
             $path = '/';
