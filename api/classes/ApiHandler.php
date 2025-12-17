@@ -6,9 +6,11 @@ require_once 'DataService.php';
 class ApiHandler
 {
     private DataService $dataService;
+    private CacheService $cache;
 
     public function __construct() {
         $this->dataService = new DataService();
+        $this->cache = new CacheService();
     }
 
     public function getStraten(array $params = []): void {
@@ -188,32 +190,10 @@ class ApiHandler
 
     public function clearCache(array $params = []): void {
         try {
-            $deletedCount = 0;
-            $errors = [];
-
-            // Clear SPARQL cache
-            try {
-                $deletedCount += $this->clearDirectory(CACHE_DIR . 'sparql/', '*.json');
-            } catch (Exception $e) {
-                $errors[] = "SPARQL cache: " . $e->getMessage();
-                error_log("Failed to clear SPARQL cache: " . $e->getMessage());
-            }
-
-            // Clear panden cache
-            try {
-                $deletedCount += $this->clearDirectory(CACHE_DIR . 'panden/', '*.json');
-            } catch (Exception $e) {
-                $errors[] = "Panden cache: " . $e->getMessage();
-                error_log("Failed to clear panden cache: " . $e->getMessage());
-            }
+            $this->cache->clear_cache();
 
             $response = [
-                'success' => empty($errors),
-                'deleted_files' => $deletedCount,
-                'message' => empty($errors)
-                    ? "Successfully cleared {$deletedCount} cache files"
-                    : "Cleared {$deletedCount} files with some errors",
-                'errors' => $errors
+                'message' => "Successfully cleared cache"
             ];
 
             ResponseHelper::json($response);

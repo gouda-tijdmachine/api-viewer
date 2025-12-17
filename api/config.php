@@ -1,9 +1,8 @@
 <?php
 
-define('CACHE_DIR', __DIR__ . '/cache/');
+define('CACHE_DURATION_SECONDS', 1209600);  # 14 dagen = 14*24*3600 seconden
 
 define('SPARQL_ENDPOINT', 'https://www.goudatijdmachine.nl/sparql11');
-define('SPARQL_CACHE_DURATION_SECONDS', 1209600);  # 14 dagen = 14*24*3600 seconden
 define('SPARQL_CURL_UA', 'api-viewer');
 define('UPPER_LIMIT', 251);
 define('SPARQL_LOG', 0);

@@ -5,6 +5,7 @@ include 'config.php';
 require_once 'classes/Router.php';
 require_once 'classes/ApiHandler.php';
 require_once 'classes/ResponseHelper.php';
+require_once 'classes/CacheService.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');

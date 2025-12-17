@@ -7,7 +7,9 @@ require_once 'Lijsten.php';
 
 class DataService {
 
-    private $sparqlService;
+    private SparqlService $sparqlService;
+    private CacheService $cache;
+    
     private $formatters;
     private $geoPHP;
     public $lijsten;
@@ -17,6 +19,7 @@ class DataService {
         $this->formatters = new Formatters();
         $this->geoPHP = new GeoPHP();
         $this->lijsten = new Lijsten();
+        $this->cache = new CacheService();
     }
 
     public function getStraten(): array {
@@ -52,21 +55,17 @@ class DataService {
     }
 
     public function getJaarPanden($jaar): array {
-        $geoJsonFile = CACHE_DIR . "panden/$jaar.json";
-
-        if (file_exists($geoJsonFile) && !isset($_GET["nocache"])) {
-            $currentTime = time();
-            $fileModTime = filemtime($geoJsonFile);
-            $difference = $currentTime - $fileModTime;
-            if ($difference <= SPARQL_CACHE_DURATION_SECONDS) {
-                return json_decode(file_get_contents($geoJsonFile), true);
+        $cache_key = "panden/$jaar";
+        $geoJson = $this->cache->get($cache_key);
+        if (!$geoJson) {
+            $geoJson = $this->_getJaarpanden($jaar);
+            if ($geoJson === null) {
+                return null;
             }
+            $this->cache->put($cache_key, json_encode($geoJson));
         }
 
-        $geoJson = $this->_getJaarpanden($jaar);
-        file_put_contents($geoJsonFile, json_encode($geoJson));
-
-        return $geoJson;
+        return json_decode($geoJson);
     }
 
     private function _getJaarpanden($jaar): array {
