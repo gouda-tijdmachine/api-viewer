@@ -6,17 +6,19 @@ class CacheService {
     private $token;
 
     public function __construct() {
-    #    if (!getenv('KV_REST_API_URL') || !getenv('KV_REST_API_TOKEN')) {
-    #        $this->redis = new Redis();
-    #        $this->redis->connect('127.0.0.1', 6379); 
-    #    } else {
-    #        $this->baseUrl = getenv('KV_REST_API_URL');
-    #        $this->token = getenv('KV_REST_API_TOKEN');
-    #    }
+            if (CACHE_ENABLED) {
+            if (!getenv('KV_REST_API_URL') || !getenv('KV_REST_API_TOKEN')) {
+                $this->redis = new Redis();
+                $this->redis->connect('127.0.0.1', 6379); 
+            } else {
+                $this->baseUrl = getenv('KV_REST_API_URL');
+                $this->token = getenv('KV_REST_API_TOKEN');
+            }
+        }
     }
--
+
     public function get($key) {
-        if (isset($_GET['no_cache'])) {
+        if (isset($_GET['no_cache']) || !CACHE_ENABLED) {
             return null;
         }
         if ($this->redis) {
@@ -33,6 +35,10 @@ class CacheService {
     }
 
     public function put($key, $value, $seconds = 3600) {
+        if (!CACHE_ENABLED) {
+            return null;
+        }
+
         if ($this->redis) {
             try {
                 return $this->redis->setex($key, $seconds, $value);
@@ -46,9 +52,12 @@ class CacheService {
     }
 
     public function clear_cache() {
-        if ($this->redis) {
-            return $this->redis->flushDB();
+        if (!CACHE_ENABLED) {
+            return null;
         }
+        #if ($this->redis) {
+        #    return $this->redis->flushDB();
+        #}
 
         return $this->clear_via_curl();
     }
