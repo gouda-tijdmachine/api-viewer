@@ -12,6 +12,10 @@
         "dest": "assets/favicon.ico"
     },
     { 
+        "src": "/test.php", 
+        "dest": "/api/test.php" 
+    },
+    { 
         "src": "/(.*)", 
         "dest": "/api/index.php" 
     }
