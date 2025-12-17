@@ -7,12 +7,12 @@ class CacheService {
 
     public function __construct() {
         if (CACHE_ENABLED) {
-            if (!getenv('REDIS')) {
+            if (!getenv('REDIS_URL')) {
                 $this->redis = new Redis();
                 $this->redis->connect('127.0.0.1', 6379); 
                 $this->local = true;
             } else {
-                $parsed = parse_url(getenv('REDIS'));
+                $parsed = parse_url(getenv('REDIS_URL'));
 
                 $host = $parsed['host'];
                 $port = $parsed['port'];
