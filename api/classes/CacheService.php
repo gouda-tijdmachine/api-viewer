@@ -6,15 +6,15 @@ class CacheService {
     private $token;
 
     public function __construct() {
-        if (!getenv('KV_REST_API_URL') || !getenv('KV_REST_API_TOKEN')) {
-            $this->redis = new Redis();
-            $this->redis->connect('127.0.0.1', 6379); 
-        } else {
-            $this->baseUrl = getenv('KV_REST_API_URL');
-            $this->token = getenv('KV_REST_API_TOKEN');
-        }
+    #    if (!getenv('KV_REST_API_URL') || !getenv('KV_REST_API_TOKEN')) {
+    #        $this->redis = new Redis();
+    #        $this->redis->connect('127.0.0.1', 6379); 
+    #    } else {
+    #        $this->baseUrl = getenv('KV_REST_API_URL');
+    #        $this->token = getenv('KV_REST_API_TOKEN');
+    #    }
     }
-
+-
     public function get($key) {
         if (isset($_GET['no_cache'])) {
             return null;
