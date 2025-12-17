@@ -9,7 +9,7 @@ class DataService {
 
     private SparqlService $sparqlService;
     private CacheService $cache;
-    
+
     private $formatters;
     private $geoPHP;
     public $lijsten;
@@ -54,7 +54,7 @@ class DataService {
         return $results;
     }
 
-    public function getJaarPanden($jaar): array {
+    public function getJaarPanden($jaar) {
         $cache_key = "panden/$jaar";
         $geoJson = $this->cache->get($cache_key);
         if (!$geoJson) {

@@ -16,6 +16,9 @@ class CacheService {
     }
 
     public function get($key) {
+        if (isset($_GET['no_cache'])) {
+            return null;
+        }
         if ($this->redis) {
             try {
                 $value = $this->redis->get($key);
