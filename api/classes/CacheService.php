@@ -2,39 +2,38 @@
 
 class CacheService {
     private $redis = null;
-    private $local = false;
-    private $token;
+    private $local = true;
 
     public function __construct() {
         if (CACHE_ENABLED) {
-            if (!getenv('REDIS_URL')) {
-                $this->redis = new Redis();
-                $this->redis->connect('127.0.0.1', 6379); 
-                $this->local = true;
-            } else {
-                $parsed = parse_url(getenv('REDIS_URL'));
+            $this->redis = new Redis();
 
+            $host = '127.0.0.1';
+            $port = 6379;
+            $env = getenv('REDIS_URL');
+            if (!empty($env)) {
+                $this->local = false;
+
+                $parsed = parse_url(getenv('REDIS_URL'));
                 $host = $parsed['host'];
                 $port = $parsed['port'];
                 $user = $parsed['user'] ?? null; // 'default'
                 $pass = $parsed['pass'];
+            }
 
-                $this->redis = new Redis();
-
-                try {
-                    $this->redis->connect($host, $port);
-                    if ($user && $pass) {
+            try {
+                $this->redis->connect($host, $port);
+                if (!empty($pass)) {
+                    if (!empty($user)) {
                         $this->redis->auth(['user' => $user, 'pass' => $pass]);
                     } else {
                         $this->redis->auth($pass);
                     }
+                }
 
-                    echo "Connected successfully! Ping: " . $this->redis->ping();
-
-                } catch (Exception $e) {
-                    echo "Connection failed: " . $e->getMessage();
-                }            
-            }
+            } catch (Exception $e) {
+                echo "Connection failed: " . $e->getMessage();
+            }            
         }
     }
 
