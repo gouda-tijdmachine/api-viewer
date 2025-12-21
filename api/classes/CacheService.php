@@ -2,38 +2,37 @@
 
 class CacheService {
     private $redis = null;
-    private $local;
+    private $local = false;
     private $token;
 
     public function __construct() {
         if (CACHE_ENABLED) {
-            $this->redis = new Redis();
-            if (!getenv('REDIS_URL')) {
-                try {
-                    $this->redis->connect('127.0.0.1', 6379); 
-                    $this->local = true;
-                } catch (Exception $e) {
-                    error_log("Connection failed: " . $e->getMessage());
-                }            
+            if (!getenv('REDIS')) {
+                $this->redis = new Redis();
+                $this->redis->connect('127.0.0.1', 6379); 
+                $this->local = true;
             } else {
-                $parsed = parse_url(getenv('REDIS_URL'));
+                $parsed = parse_url(getenv('REDIS'));
 
                 $host = $parsed['host'];
                 $port = $parsed['port'];
                 $user = $parsed['user'] ?? null; // 'default'
                 $pass = $parsed['pass'];
 
+                $redis = new Redis();
+
                 try {
                     $this->redis->connect($host, $port);
-                    $this->local = false;
-
                     if ($user && $pass) {
                         $this->redis->auth(['user' => $user, 'pass' => $pass]);
                     } else {
                         $this->redis->auth($pass);
                     }
+
+                    echo "Connected successfully! Ping: " . $this->redis->ping();
+
                 } catch (Exception $e) {
-                    error_log("Connection failed: " . $e->getMessage());
+                    echo "Connection failed: " . $e->getMessage();
                 }            
             }
         }
@@ -44,7 +43,7 @@ class CacheService {
             return null;
         }
         try {
-            $value = $this->redis->get($key);
+            $value = $this->redis->get("API-VIEWER:$key");
             return $value === false ? null : $value;
         } catch (Exception $e) {
             error_log("Local Redis Get Error: " . $e->getMessage());
@@ -58,7 +57,7 @@ class CacheService {
         }
 
         try {
-            return $this->redis->setex($key, $seconds, $value);
+            return $this->redis->setex("API-VIEWER:$key", $seconds, $value);
         } catch (Exception $e) {
             error_log("Local Redis Put Error: " . $e->getMessage());
             return false;
@@ -66,12 +65,24 @@ class CacheService {
     }
 
     public function clear_cache() {
-        if (!CACHE_ENABLED) {
-            return null;
-        }
-        if (!$this->local) {
-            return $this->redis->flushDB();
-        }
+        $prefix = "API-VIEWER:*";
+        error_log("DEBUG: deleting $$prefix keys from Redis");
+
+        $it = null;
+        $deleted = 0;
+
+        do {
+            $keys = $this->redis->scan($it, $prefix, 1000);
+            if ($keys !== false && !empty($keys)) {
+                $deleted += $this->redis->del($keys);
+                error_log("DEBUG: deleting $key from Redis");
+            }
+        } while ($it > 0);
+
+        return $deleted; // number of keys deleted
+
+        
+                
     }
 
 }

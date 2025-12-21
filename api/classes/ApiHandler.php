@@ -190,12 +190,17 @@ class ApiHandler
 
     public function clearCache(array $params = []): void {
         try {
-            $this->cache->clear_cache();
+            $deleted = $this->cache->clear_cache();
 
-            $response = [
-                'message' => "Successfully cleared cache"
-            ];
-
+            if ($deleted > 0) {
+                $response = [
+                    'message' => "Successfully cleared $deleted keys from cache"
+                ];
+            } else {
+                $response = [
+                    'message' => "No keys were cleared from cache"
+                ];
+            }
             ResponseHelper::json($response);
         } catch (Exception $e) {
             $this->logAndReturnError($e, 'clearCache');

@@ -9,7 +9,7 @@ class DataService {
 
     private SparqlService $sparqlService;
     private CacheService $cache;
-
+    
     private $formatters;
     private $geoPHP;
     public $lijsten;
@@ -62,7 +62,8 @@ class DataService {
             if ($geoJson === null) {
                 return null;
             }
-            $this->cache->put($cache_key, json_encode($geoJson));
+            $geoJson = json_encode($geoJson);
+            $this->cache->put($cache_key, $geoJson);
         }
 
         return json_decode($geoJson);
@@ -78,7 +79,8 @@ class DataService {
 
         foreach ($panden as $pand) {
             $identifier = !empty($pand['locatiepunt']['value']) ? $pand['locatiepunt']['value'] : ($pand['identifier']['value'] ?? '');
-            $naam = !empty($pand['locatienaam']['value']) ? 'Locatie ' . $pand['locatienaam']['value'] : ($pand['naam']['value'] ?? '');
+
+            $naam = !empty($pand['adressen']['value']) ? $this->formatters->recenteAdressenFormatter($pand['adressen']['value']) : ($pand['naam']['value'] ?? '');
 
             $feature = [
                 "type" => "Feature",
@@ -116,7 +118,7 @@ class DataService {
             if (!isset($filtered[$id])) {
                 $filtered[$id] = [
                     'identifier' => $id,
-                    'naam' => $pand['naam']['value'] ?? '',
+                    'naam' => $this->formatters->locatiepuntFormatter($pand['naam']['value']) ?? '',
                     'straten' => []
                 ];
             }
@@ -225,8 +227,8 @@ class DataService {
         $aantal = count($results);
         $results = array_slice($results, $offset, $limit);
         return [
-            'fotos' => $results,
-            'aantal' => $aantal
+            'aantal' => $aantal,
+            'fotos' => $results
         ];
     }
 
@@ -236,16 +238,30 @@ class DataService {
         if (empty($persoon)) {
             return null;
         }
-
         $persoon = $persoon[0];
-        $datering = $persoon['beginDate']['value'] ?? '';
-        if (!empty($persoon['endDate']['value'])) {
-            $datering .= "-" . $persoon['endDate']['value'];
+
+        $datering = '';
+        if (!empty($persoon['beginDate']['value'])) {
+            $datering = $persoon['beginDate']['value'];
+            if (!empty($persoon['endDate']['value'])) {
+                if ($datering != $persoon['endDate']['value']) {
+                    $datering .= " – " . $persoon['endDate']['value'];
+                }
+            } else {
+                $datering .= " – nu";
+            }
+        } else {
+            $datering="????";
+            if (!empty($persoon['bronNaam']['value']) && preg_match('/\d{4}/', $persoon['bronNaam']['value'], $matches)) {
+                $datering = $matches[0];
+                $persoon['beginDate']['value'] = $datering;
+                $persoon['endDate']['value'] = $datering;
+            }
         }
 
         $bron = [
             'naam' => $persoon['bronNaam']['value'] ?? null,
-            'naam_kort' => $persoon['bronInventaris']['value'] ?? null,
+            'naam_kort' => $persoon['bronInventaris']['value'] ?? '',
             'datering' => $datering,
             'url' => $persoon['bronUrl']['value'] ?? null
         ];
@@ -292,7 +308,8 @@ class DataService {
             $fotos[] = [
                 'identifier' => $foto['identifier']['value'] ?? '',
                 'titel' => $foto['titel']['value'] ?? '',
-                'thumbnail' => $foto['thumbnail']['value'] ?? ''
+                'thumbnail' => $foto['thumbnail']['value'] ?? '',
+                'datering' => $foto['datering']['value'] ?? '',
             ];
         }
 
@@ -309,27 +326,29 @@ class DataService {
         $adressen = [];
 
         $sadressen = $this->sparqlService->get_adressen_locatiepunt($locatiepuntidentifier);
-        usort($sadressen, fn($a, $b) => ($a['datering'] ?? 0) <=> ($b['datering'] ?? 0));
+        #error_log(print_r($sadressen,1));
+        usort($sadressen, fn($a, $b) => ($a['startDate'] ?? 0) <=> ($b['startDate'] ?? 0));
 
         foreach ($sadressen as $adres) {
             $naam = $adres['naam']['value'] ?? '';
             $naam = preg_replace("/, wijk.*? \(/", "(", $naam);
-            $datering = $adres['datering']['value'] ?? '';
-            if (preg_match("/\(([0-9]{4}-[0-9]{0,4})\)/", $naam, $matches)) {
-                $datering = $matches[1];
-                $naam = preg_replace("/\s*\([0-9]{4}-[0-9]{0,4}\)/", "", $naam);
-            }
+            $naam = preg_replace("/\s*\([0-9]{4}-[0-9]{0,4}\)/", "", $naam);
+            # datering zelf opbouwen, niet uit naam halen
+            $datering = $adres['startDate']['value'] . ' – ' . $adres['endDate']['value'];
+            # schoon de wijknaam op, geen Gouda, geen periode en begin met hoofdletter
+            $wijknaam = str_replace("Gouda, ", "", $adres['wijknaam']['value'] ?? '');
+            $wijknaam = preg_replace("/ \([0-9]{4}.*/","",ucfirst($wijknaam));
             $adressen[] = [
                 'type' => !empty($adres['type']['value']) ? $this->formatters->adrestypeFormatter($adres['type']['value']) : '',
                 'naam' => $naam,
                 'datering' => $datering,
-                'wijk' => str_replace("Gouda, ", "", $adres['wijknaam']['value'] ?? '')
+                'wijk' => $wijknaam
             ];
         }
 
         $filtered = [
             'identifier' => $locatiepuntidentifier,
-            'naam' => "Locatiepunt " . ($pand['naam']['value'] ?? ''),
+            'naam' => "Locatiepjunt " . ($pand['naam']['value'] ?? ''),
             'datering' => "(nog niet geïmplementeerd)",
             'adressen' => $adressen,
             'personen' => $personen,
@@ -367,7 +386,7 @@ class DataService {
             'informatie_auteursrechten' => !empty($foto['informatieAuteursRechten']['value']) ? str_replace("https://samh.nl/auteursrechten#", "", $foto['informatieAuteursRechten']['value']) : null,
             'url' => $foto['url']['value'] ?? null,
             'datering' => $foto['datering']['value'] ?? null,
-            'bronbronorganisatie' => (!empty($foto['url']['value']) && strstr($foto['url']['value'], 'samh.nl') !== false) ? 'SAMH' : 'RCE',
+            'bronbronorganisatie' => (!empty($foto['url']['value']) && strstr($foto['url']['value'], 'samh.nl') !== false) ? 'Streekarchief Midden-Holland' : 'Rijkdienst voor het Cultureel Erfgoed',
             'straten' => [],
             'panden' => [],
             'fotos_dichtbij' => $fotos_dichtbij
@@ -395,7 +414,9 @@ class DataService {
                     $adresNaam = $arrAdressen[0]["naam"]["value"] ?? '';
                     if ($locatienaam && $adresNaam) {
                         $adresNaam = preg_replace("/, wijk.*/", "", $adresNaam);
-                        $pandnaam = "Locatiepunt {$locatienaam}, recent bekend als {$adresNaam}";
+                        $adresNaam = preg_replace("/ \([0-9]{4}.*$/","", $adresNaam);
+                        #$pandnaam = "Locatiepunt {$locatienaam}, recent bekend als {$adresNaam}";
+                        $pandnaam = "Pand meest recent bekend als {$adresNaam}";
                     }
                 }
 

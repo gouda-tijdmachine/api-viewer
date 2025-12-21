@@ -2,10 +2,8 @@
 
 define('CACHE_DURATION_SECONDS', 1209600);  # 14 dagen = 14*24*3600 seconden
 define('CACHE_ENABLED', true);
-
 define('SPARQL_ENDPOINT', 'https://www.goudatijdmachine.nl/sparql11');
 define('SPARQL_CURL_UA', 'api-viewer');
-define('UPPER_LIMIT', 251);
 define('SPARQL_LOG', 0);
 
 define('SPARQL_PREFIX', 'PREFIX foaf: <http://xmlns.com/foaf/0.1/>
@@ -19,10 +17,10 @@ PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX picom: <https://personsincontext.org/model#>
 PREFIX pnv: <https://w3id.org/pnv#>
 PREFIX prov: <http://www.w3.org/ns/prov#>
-PREFIX ql: <http://qlever.cs.uni-freiburg.de/builtin-functions/>
 PREFIX roar: <https://w3id.org/roar#>
 PREFIX sdo: <https://schema.org/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX rico: <https://www.ica.org/standards/RiC/ontology#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 ');
+# PREFIX ql: <http://qlever.cs.uni-freiburg.de/builtin-functions/>

@@ -93,13 +93,13 @@ SELECT ?identifier ?naam (GROUP_CONCAT(DISTINCT ?altname; separator=", ") AS ?na
      sdo:name ?naam ;
      sdo:identifier ?id .
 OPTIONAL { ?identifier sdo:alternateName ?altname }
-FILTER(STR(?id) IN (
-    "https://www.goudatijdmachine.nl/id/straat/wijdstraat",  
-    "https://www.goudatijdmachine.nl/id/straat/kerksteeg",  
-    "https://www.goudatijdmachine.nl/id/straat/markt",
-    "https://www.goudatijdmachine.nl/id/straat/nieuwehaven",
-    "https://www.goudatijdmachine.nl/id/straat/achter-de-kerk"
-  ))
+#FILTER(STR(?id) IN (
+#    "https://www.goudatijdmachine.nl/id/straat/wijdstraat",  
+#    "https://www.goudatijdmachine.nl/id/straat/kerksteeg",  
+#    "https://www.goudatijdmachine.nl/id/straat/markt",
+#    "https://www.goudatijdmachine.nl/id/straat/nieuwehaven",
+#    "https://www.goudatijdmachine.nl/id/straat/achter-de-kerk"
+#  ))
 }
 GROUP BY ?identifier ?naam
 ORDER BY ?naam');
@@ -124,20 +124,23 @@ ORDER BY ?startjaar
 
   public function get_panden_jaar($jaar): array {
     return $this->SPARQL('
-SELECT ?identifier ?geometry ?naam ?locatiepunt ?locatienaam WHERE {
-   ?identifier a gtm:Pand ;
-   sdo:name ?naam ;
-   sdo:startDate ?startDate ;
-   geo:hasGeometry/geo:asWKT ?geometry .	 
-   OPTIONAL { ?identifier  sdo:endDate ?endDate  }
-   FILTER ( ?startDate <= "'.intval($jaar).'" && (!BOUND(?endDate) || ?endDate >= "'.intval($jaar).'") )
-   OPTIONAL { 
-    ?identifier geo:hasGeometry ?locatiepunt . 
+SELECT ?identifier ?geometry ?naam ?locatiepunt (GROUP_CONCAT(?adres ; separator="|") AS ?adressen) WHERE {
+  ?identifier a gtm:Pand ;
+    sdo:name ?naam ;
+    sdo:startDate ?startDate ;
+    geo:hasGeometry/geo:asWKT ?geometry .	 
+  OPTIONAL { ?identifier sdo:endDate ?endDate }
+  FILTER ( ?startDate <= "'.intval($jaar).'" && (!BOUND(?endDate) || ?endDate >= "'.intval($jaar).'") )
+  OPTIONAL { 
+    ?identifier geo:hasGeometry ?locatiepunt .
+    ?s geo:hasGeometry ?locatiepunt ;
+      a ?type ;
+      sdo:name ?adres .
+    FILTER (?type IN (gtm:PlaatselijkeAanduiding, gtm:StraatNummerAanduiding, gtm:NummerAanduiding, gtm:Huisnaam))
     FILTER(ISIRI(?locatiepunt)) 
-    ?locatiepunt sdo:name ?locatienaam
-    }
-}');
-  # waarom zijn ?startDate en ?endDate literals en niet ^^xsd:int of ^^xsd:gYear? 
+  }
+} GROUP BY ?identifier ?geometry ?naam ?locatiepunt');
+  # waarom zijn ?startDate en ?endDate literals en niet ^^xsd:int of ^^xsd:gYear ? 
   # gaat nu goed doordat beide kanten van vergelijking ^^xsd:string zijn...
   }
 
@@ -154,7 +157,8 @@ SELECT ?identifier ?geometry ?naam ?locatiepunt ?locatienaam WHERE {
       $straatfilter="BIND(<".$straatidentifier."> AS ?straat)";
     }
     if (!empty($q)) { 
-      $searchfilter=' ?text ql:contains-entity ?naam . ?text ql:contains-word "'.addslashes($q).'" . ';
+      #$searchfilter=' ?text ql:contains-entity ?naam . ?text ql:contains-word "'.addslashes($q).'" . ';
+      $searchfilter=' FILTER(CONTAINS(LCASE(?naam), "'.addslashes(strtolower($q)).'"))';
     } else { 
       if (empty($straatidentifier)) {
         $topTien=array(
@@ -210,7 +214,8 @@ ORDER BY ?naam ?straat');
     $searchfilter="";
     $toptienfilter="";
     if (!empty($q)) { 
-      $searchfilter=' ?text ql:contains-entity ?naam . ?text ql:contains-word "'.addslashes($q).'" . ';
+      #$searchfilter=' ?text ql:contains-entity ?naam . ?text ql:contains-word "'.addslashes($q).'" . ';
+      $searchfilter=' FILTER(CONTAINS(LCASE(?naam), "'.addslashes(strtolower($q)).'"))';
     } else {
       if (empty($straatidentifier)) {
         $topTien=array(
@@ -230,7 +235,7 @@ ORDER BY ?naam ?straat');
     }
 
     return $this->SPARQL('
-SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?start WHERE {
+SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering WHERE {
   '.$toptienfilter.'
   {
     # volkstelling / verponding
@@ -280,7 +285,7 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?start WHERE {
     OPTIONAL { ?partof rico:hasBeginningDate ?datering } '.$tijdvakfilter.'
     FILTER(ISIRI(?locatiepunt))
   } 
-} ORDER BY ?familyname ?givenName ?start');
+} ORDER BY ?familyname ?givenName ?datering');
   }	
 
   public function get_foto_index($q, $straatidentifier, $tijdvak): array {
@@ -294,7 +299,8 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?start WHERE {
 
   private function get_foto_index_beschrijving($q, $straatidentifier, $tijdvak): array {  
     $straatfilter=!empty($straatidentifier)?'BIND( <'.$straatidentifier.'> AS ?straat) ':'';
-    $searchfilter=!empty($q)?' ?text ql:contains-entity ?titel . ?text ql:contains-word "'.addslashes($q).'" . ':'';
+    #$searchfilter=!empty($q)?' ?text ql:contains-entity ?titel . ?text ql:contains-word "'.addslashes($q).'" . ':'';
+    $searchfilter=!empty($q)?' FILTER(CONTAINS(LCASE(?titel), "'.addslashes(strtolower($q)).'"))':'';
     $tijdvakfilter=!empty($tijdvak)?' FILTER(?datering>="'.$tijdvak[0].'"^^xsd:gYear && ?datering<="'.$tijdvak[1].'"^^xsd:gYear ) ':'';
     $toptienfilter="";
     if (empty($straatfilter) && empty($searchfilter)) {
@@ -320,7 +326,7 @@ SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?straatnaam ?vervaardiger ?da
     ?identifier sdo:spatialCoverage/gtm:straat ?straat ;
       sdo:name ?titel ;
       sdo:url ?url ;
-      sdo:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue  ?datering ;
+      sdo:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering ;
       sdo:spatialCoverage/sdo:geo/geo:hasGeometry/geo:asWKT ?WKT2 ;
       o:media/sdo:thumbnailUrl ?thumbnail .
     '.$searchfilter.$tijdvakfilter.'
@@ -336,8 +342,7 @@ SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?straatnaam ?vervaardiger ?da
   FILTER(geof:sfIntersects(?WKT1, ?WKT2))
   ?straat sdo:name ?straatnaam
 }
-ORDER BY ASC(?datering) ?titel
-LIMIT '.UPPER_LIMIT);
+ORDER BY ASC(?datering) ?titel');
   }
 
   private function get_foto_index_locatiepunt($locatiepunt, $tijdvak): array {
@@ -349,8 +354,9 @@ SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?vervaardiger ?datering ?stra
   {
     ?locatiepunt a geo:Geometry ;
                  sdo:name ?name .
-    ?text ql:contains-entity ?name .
-    ?text ql:contains-word "'.$locatiepunt.'" .
+#    ?text ql:contains-entity ?name .
+#    ?text ql:contains-word "'.$locatiepunt.'" .
+    FILTER(CONTAINS(LCASE(?naam), "'.$locatiepunt.'"))
     ?perceel geo:hasGeometry ?locatiepunt ;
              geo:hasGeometry/geo:asWKT ?WKT1 .
     FILTER(STRSTARTS(STR(?WKT1),"POLYGON"))
@@ -374,8 +380,7 @@ SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?vervaardiger ?datering ?stra
     ?identifier sdo:spatialCoverage/gtm:straat ?straat .
     ?straat sdo:name ?straatnaam .
   }
-} ORDER BY ?area
-LIMIT '.UPPER_LIMIT);
+} ORDER BY ?area');
   }
 
   public function get_foto($identifier): array {
@@ -421,7 +426,7 @@ LIMIT 10');
 
   public function get_fotos_locatiepunt($locatiepuntidentifier): array {
     return $this->SPARQL('
-SELECT DISTINCT ?identifier ?titel ?thumbnail WHERE  {
+SELECT DISTINCT ?identifier ?titel ?thumbnail ?datering WHERE  {
   {
     ?s a gtm:Perceel ;
        geo:hasGeometry <'.$locatiepuntidentifier.'>;
@@ -431,13 +436,14 @@ SELECT DISTINCT ?identifier ?titel ?thumbnail WHERE  {
     ?identifier sdo:spatialCoverage/sdo:geo/geo:hasGeometry/geo:asWKT ?WKT2 .
     ?identifier sdo:name ?titel ;
              sdo:url ?url ;
+             sdo:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering ;
              o:media/sdo:thumbnailUrl ?thumbnail .
     OPTIONAL {
       ?identifier sdo:spatialCoverage/sdo:geo/geo:hasGeometry/<https://osm2rdf.cs.uni-freiburg.de/rdf#area> ?area 
     }
   }
   FILTER(geof:sfIntersects(?WKT1, ?WKT2)).
-} ORDER BY ?area LIMIT 10');
+} ORDER BY ?datering ?area LIMIT 10');
   }
 
   public function get_pand($locatiepuntidentifier): array {
@@ -455,6 +461,7 @@ SELECT * WHERE {
   ?pv sdo:name ?name ;
       geo:hasGeometry ?locatiepunt .
   ?locatiepunt sdo:name ?locatiepuntnaam .
+  OPTIONAL { ?pv gtm:straat/o:title ?locatiepuntnaam }
   #OPTIONAL { ?pv sdo:givenName ?givenName }
   #OPTIONAL { ?pv sdo:familyName ?familyName }
   #OPTIONAL { ?pv pnv:patronym ?patronym }
@@ -470,11 +477,16 @@ SELECT * WHERE {
   #OPTIONAL { ?pv sdo:parent ?parent }
   #OPTIONAL { ?pv picom:isWidOf ?isWidOf }
   OPTIONAL { ?pv prov:hadPrimarySource/sdo:isPartOf/rico:hasBeginningDate ?beginDate }
+  OPTIONAL { ?pv prov:hadPrimarySource/rico:hasBeginningDate ?beginDate }
   OPTIONAL { ?pv prov:hadPrimarySource/sdo:isPartOf/rico:hasEndDate ?endDate }
+  OPTIONAL { ?pv prov:hadPrimarySource/rico:hasEndDate ?endDate }
   #OPTIONAL { ?pv prov:hadPrimarySource ?bronIdentifier }
-  OPTIONAL { ?pv prov:hadPrimarySource/sdo:name ?bronNaam }
+  OPTIONAL { ?pv prov:hadPrimarySource ?snl . ?snl (sdo:name|o:label) ?bronNaam }
   OPTIONAL { ?pv prov:hadPrimarySource/sdo:isPartOf/rico:identifier ?_bronInventaris . BIND(CONCAT("SAMH ", STR(?_bronInventaris)) AS ?bronInventaris) }
+  OPTIONAL { ?pv prov:hadPrimarySource/rico:identifier ?_bronInventaris . BIND(CONCAT("SAMH ", STR(?_bronInventaris)) AS ?bronInventaris) }
   OPTIONAL { ?pv sdo:isBasedOn ?bronUrl }
+  OPTIONAL { ?pv roar:documentedIn ?bronUrl }
+  OPTIONAL { ?pv prov:hadPrimarySource ?bronUrl }
 }');
   }
 
@@ -488,11 +500,12 @@ SELECT ?identifier ?naam ?beroep ?datering WHERE {
   OPTIONAL { ?identifier sdo:datePublished ?datering }
   OPTIONAL { ?identifier prov:hadPrimarySource/rico:hasBeginningDate ?datering }
   OPTIONAL { ?identifier prov:hadPrimarySource/sdo:isPartOf/rico:hasBeginningDate ?datering }
-} ORDER BY ?datering
+} ORDER BY ASC(?datering)
 ');
   }
 
   public function get_adres_jaar($locatiepuntidentifier, $jaar1, $jaar2 = 0): array {
+    error_log("DEBUG: get_adres_jaar($locatiepuntidentifier, $jaar1, $jaar2)");
     $adressen = $this->get_adressen_locatiepunt($locatiepuntidentifier);
     $adres_array = [];
     $straaturi = [];
@@ -513,21 +526,22 @@ SELECT ?identifier ?naam ?beroep ?datering WHERE {
       }
       $straaturi[$adres['straaturi']['value']] = 1;
     }
-
+error_log("DEBUG: = ".array_keys($adres_array)." / ". array_keys($straaturi));
     return [join(", ", array_keys($adres_array)), array_keys($straaturi)];
   }
 
   public function get_adressen_locatiepunt($locatiepuntidentifier, $limit = 0): array {
     # nieuwste adres eerst
     return $this->SPARQL('
-SELECT ?type ?naam ?startDate ?endDate ?wijknaam ?straaturi ?locatienaam WHERE {
+SELECT ?type ?naam ?startDate (COALESCE(?_endDate, "nu") AS ?endDate) ?wijknaam ?straaturi ?locatienaam WHERE {
   ?uri geo:hasGeometry <'.$locatiepuntidentifier.'> ;
        a ?type ;
-       sdo:startDate ?startDate ;
+       sdo:startDate ?_startDate ;
        sdo:name ?naam ;
        gtm:straat ?straaturi .
   FILTER (?type IN (gtm:PlaatselijkeAanduiding, gtm:StraatNummerAanduiding, gtm:NummerAanduiding, gtm:Huisnaam))
-  OPTIONAL { ?uri sdo:endDate ?endDate }
+  BIND(xsd:integer(SUBSTR(STR(?_startDate), 1, 4)) AS ?startDate)
+  OPTIONAL { ?uri sdo:endDate ?_endDate }
   OPTIONAL {
     ?uri hg:liesIn ?wijk .
     ?wijk a gtm:Wijk ;
