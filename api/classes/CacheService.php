@@ -19,7 +19,7 @@ class CacheService {
                 $user = $parsed['user'] ?? null; // 'default'
                 $pass = $parsed['pass'];
 
-                $redis = new Redis();
+                $this->redis = new Redis();
 
                 try {
                     $this->redis->connect($host, $port);
