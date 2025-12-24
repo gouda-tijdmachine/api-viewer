@@ -3,43 +3,41 @@ name: API tests (post-deploy)
 on:
   repository_dispatch:
     types: ['vercel.deployment.success']
+  workflow_dispatch: # Allows you to run it manually for testing
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   qa:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      # 1. Checkout the main branch directly
-      - name: Checkout main branch
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0 # Fetches all history so push works smoothly
 
-      # 2. Run API tests 
-      # Note: We run this AFTER checking out main so the generated 
-      # index.html stays in the working directory of the correct branch.
       - name: Run API tests
         env:
           BASE_URL: https://api-viewer.goudatijdmachine.nl
-          # You might want to pass the SHA to your script if it needs it internally
           DEPLOYED_SHA: ${{ github.event.client_payload.git.sha }}
         run: |
-          bash ./qa-results/run-api-tests.sh
+          # Ensure the directory exists
+          mkdir -p qa-results
+          bash ./tests/run-api-tests.sh
 
-      # 3. Commit and Push
-      - name: Commit API test results
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'qa-results/'
 
-          git add qa-results/index.html
-          
-          # Only commit if there are actual changes to the file
-          if git diff --staged --quiet; then
-            echo "No changes to test results. Skipping commit."
-          else
-            git commit -m "docs: update API test results for ${{ github.event.client_payload.git.sha }}"
-            git push origin main
-          fi
+  deploy:
+    needs: qa
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
