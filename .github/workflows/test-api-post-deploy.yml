@@ -16,7 +16,7 @@ jobs:
 
       - name: Run API tests
         env:
-          BASE_URL: ${{ github.event.client_payload.url }}
+          BASE_URL: https://api-viewer.goudatijdmachine.nl/
 
         run: |
           bash ./qa-results/run-api-tests.sh

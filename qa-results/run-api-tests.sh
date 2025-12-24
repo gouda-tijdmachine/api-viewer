@@ -54,7 +54,7 @@ test_endpoint() {
     local endpoint=$2
     local expected_status=$3
     local description=$4
-    local printbody=$5
+    local printbody="${5:-}"
 
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
@@ -87,7 +87,7 @@ test_endpoint() {
     echo "Response time: ${response_time}ms"
     echo "<li><strong>Response time</strong>: ${response_time}ms</li>" >> $TESTHTML
 
-    if [ "$printbody" -ne "0" ]; then
+    if [ "$printbody" -ne "" ]; then
         echo "Response body: $body" | head -c 200
         #echo "<li><strong>Response body</strong>: <pre>$body</pre>" >> $TESTHTML
         if [ ${#body} -gt 200 ]; then
