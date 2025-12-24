@@ -526,7 +526,7 @@ SELECT ?identifier ?naam ?beroep ?datering WHERE {
       }
       $straaturi[$adres['straaturi']['value']] = 1;
     }
-error_log("DEBUG: = ".array_keys($adres_array)." / ". array_keys($straaturi));
+    
     return [join(", ", array_keys($adres_array)), array_keys($straaturi)];
   }
 
