@@ -147,10 +147,12 @@ test_json_endpoint() {
     echo "Response time: ${response_time}ms"
     echo "<li><strong>Response time</strong>: ${response_time}ms</li>" >> $TESTHTML
 
-    echo "Response body: $body" | head -c 200
-    echo "<li><strong>Response body</strong>: <xmp>$body</xmp>" >> $TESTHTML
-    if [ ${#body} -gt 200 ]; then
+    body_preview="${body:0:250}"    
+    echo "Response body: $body_preview"
+    echo "<li><strong>Response body</strong>: <xmp>$body_preview" >> $TESTHTML
+    if [ ${#body} -gt 250 ]; then
         echo "..."
+        echo "..." >> $TESTHTML
     fi
     echo "</xmp></li>" >> $TESTHTML
 
@@ -268,6 +270,7 @@ if [ $TOTAL_TESTS -eq $PASSED_TESTS ]; then
 else
     echo "<ul class='fail'>" >> $SUMFILE
 fi
+echo "<li><strong>Basis URL</strong>: ${BASE_URL}" >> $SUMFILE
 echo "<li><strong>Uitgevoerd</strong>: " >> $SUMFILE
 echo $(date +"%d-%m-%Y (%H:%M:%S)") >> $SUMFILE
 echo "</li>" >> $SUMFILE
