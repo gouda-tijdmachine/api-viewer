@@ -1,5 +1,4 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':!qa-results'",
   "functions": {
     "api/**/*.php": { "runtime": "vercel-php@0.7.3" }
   },
