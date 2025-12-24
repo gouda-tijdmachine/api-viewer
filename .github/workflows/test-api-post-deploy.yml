@@ -40,6 +40,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to test results. Skipping commit."
           else
-            git commit -m "docs: update API test results for ${ { github.event.client_payload.git.sha } }"
+            git commit -m "docs: update API test results for ${{ github.event.client_payload.git.sha }}"
             git push origin main
           fi
