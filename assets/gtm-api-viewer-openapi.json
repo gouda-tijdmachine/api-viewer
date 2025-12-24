@@ -2,7 +2,7 @@
     "openapi": "3.0.4",
     "info": {
         "title": "Interactieve Historische Kaart Viewer API",
-        "description": "Deze [getestte](https://www.goudatijdmachine.nl/api-viewer/testresultaten.html) read-only REST API voorziet in de informatiebehoefte qua foto's, panden, straten en personen; alle geïdentifieerd met een persistente HTTP URI op basis van ARK.<br><br>**N.B.**: de beschikbare data betreft met name de 14 panden aan de Wijdstraat (oostzijde) zoals deze in [project Wijdstraat](https://www.goudatijdmachine.nl/project-wijdstraat/locaties/) zijn gekoppeld, dus **nog niet** geheel Gouda.",
+        "description": "Deze [getestte](/qa-results/) read-only REST API voorziet in de informatiebehoefte qua foto's, panden, straten en personen; alle geïdentifieerd met een persistente HTTP URI op basis van ARK.<br><br>**N.B.**: de beschikbare data betreft met name de 14 panden aan de Wijdstraat (oostzijde) zoals deze in [project Wijdstraat](https://www.goudatijdmachine.nl/project-wijdstraat/locaties/) zijn gekoppeld, dus **nog niet** geheel Gouda.",
         "version": "v1.3"
     },
     "servers": [
