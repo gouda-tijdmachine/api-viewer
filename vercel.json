@@ -9,6 +9,10 @@
         "dest": "assets/$1"
     },
     {
+        "src": "/qa-results/(.*)",
+        "dest": "qa-results/$1"
+    },
+    {
         "src": "/favicon\\.ico",
         "dest": "assets/favicon.ico"
     },
