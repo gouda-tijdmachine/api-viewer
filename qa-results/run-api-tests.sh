@@ -87,7 +87,7 @@ test_endpoint() {
     echo "Response time: ${response_time}ms"
     echo "<li><strong>Response time</strong>: ${response_time}ms</li>" >> $TESTHTML
 
-    if [ -n "$printbody" ]; then
+    if [ -z "$printbody" ]; then
         echo "Response body: $body" | head -c 200
         #echo "<li><strong>Response body</strong>: <pre>$body</pre>" >> $TESTHTML
         if [ ${#body} -gt 200 ]; then
@@ -242,8 +242,8 @@ test_endpoint "GET" "https://samh.nl/bronnen/genealogie/deeds/a634024a-cac3-98ba
 
 # Test Omeka thumbnails
 print_test_header "HTTP check - Test Omeka thumbnails"
-test_endpoint "GET" "https://www.goudatijdmachine.nl/omeka/files/medium/05a057c0734aeb68e67b609a35473ec977521a1f.jpg" 200 "Omeka thumbnail 1 die bestaat" 0
-test_endpoint "GET" "https://www.goudatijdmachine.nl/omeka/files/medium/f166c8fbec016f567150983214a2c46e99177c1e.jpg" 404 "Omeka thumbnail 2 die niet bestaat" 0
+test_endpoint "GET" "https://www.goudatijdmachine.nl/omeka/files/medium/05a057c0734aeb68e67b609a35473ec977521a1f.jpg" 200 "Omeka thumbnail 1 die bestaat" "no"
+test_endpoint "GET" "https://www.goudatijdmachine.nl/omeka/files/medium/f166c8fbec016f567150983214a2c46e99177c1e.jpg" 404 "Omeka thumbnail 2 die niet bestaat" "no"
 
 # Summary
 echo -e "\n${CYAN}===== Test Summary =====${NC}"
