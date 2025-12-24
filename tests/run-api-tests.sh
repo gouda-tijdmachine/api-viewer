@@ -15,12 +15,12 @@ echo '<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <title>Viewer API testresultaten &raquo: Gouda Tijdmachine</title>
-    <link rel="stylesheet" type="text/css" href="assets/swagger-ui.css" >
+    <link rel="stylesheet" type="text/css" href="https://api-viewer.goudatijdmachine.nl/assets/swagger-ui.css" >
     <style>
     html { box-sizing: border-box; }
     *, *:before, *:after { box-sizing: inherit; }
     body { margin:0; background: #fafafa; font-family: sans-serif; padding:10px}
-    h1 { background: url("assets/gtm-logo-2025.svg") no-repeat right center; background-size: 100px auto; line-height: 100px }
+    h1 { background: url("https://api-viewer.goudatijdmachine.nl/assets/gtm-logo-2025.svg") no-repeat right center; background-size: 100px auto; line-height: 100px }
     h2 { color: #3795ad;margin:2em 0 1em 0}
     a, a:visited { color: #3795ad; text-decoration: none}
     h3 { padding-top:1em }
@@ -272,7 +272,7 @@ else
 fi
 echo "<li><strong>Basis URL</strong>: ${BASE_URL}" >> $SUMFILE
 echo "<li><strong>Uitgevoerd</strong>: " >> $SUMFILE
-echo $(date +"%d-%m-%Y (%H:%M:%S)") >> $SUMFILE
+echo $(TZ="Europe/Amsterdam" date +"%d-%m-%Y (%H:%M:%S)") >> $SUMFILE
 echo "</li>" >> $SUMFILE
 echo -e "<li><strong>Aantal tests</strong>: $TOTAL_TESTS</li>" >> $SUMFILE
 echo -e "<li><strong>Geslaagd</strong>: $PASSED_TESTS</li>" >> $SUMFILE
