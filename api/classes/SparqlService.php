@@ -289,7 +289,7 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering WHERE {
   }	
 
   public function get_foto_index($q, $straatidentifier, $tijdvak): array {
-    $qstring=trim($q);
+    $qstring=trim($q ?? '');
     if (preg_match("/^L[0-9]+$/",$qstring)) {
       return $this->get_foto_index_locatiepunt($qstring,$tijdvak);
     } else {

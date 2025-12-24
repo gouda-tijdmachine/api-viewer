@@ -65,7 +65,7 @@ class CacheService {
 
     public function clear_cache() {
         $prefix = "API-VIEWER:*";
-        error_log("DEBUG: deleting $$prefix keys from Redis");
+        #error_log("DEBUG: deleting $$prefix keys from Redis");
 
         $it = null;
         $deleted = 0;
@@ -74,7 +74,7 @@ class CacheService {
             $keys = $this->redis->scan($it, $prefix, 1000);
             if ($keys !== false && !empty($keys)) {
                 $deleted += $this->redis->del($keys);
-                error_log("DEBUG: deleting $key from Redis");
+                #error_log("DEBUG: deleting $key from Redis");
             }
         } while ($it > 0);
 
