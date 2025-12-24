@@ -14,7 +14,7 @@ echo '<!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Viewer API testresultaten &raquo: Gouda Tijdmachine</title>
+    <title>Viewer API testresultaten &raquo; Gouda Tijdmachine</title>
     <link rel="stylesheet" type="text/css" href="https://api-viewer.goudatijdmachine.nl/assets/swagger-ui.css" >
     <style>
     html { box-sizing: border-box; }
@@ -29,6 +29,7 @@ echo '<!DOCTYPE html>
     .pass { border-left:5px solid green }
     xmp { white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; width: 100%; box-sizing: border-box; max-height:100px; overflow-y:auto }
     </style>
+    <link rel="icon" type="image/svg+xml" href="https://api-viewer.goudatijdmachine.nl/assets/gtm-logo-2025.svg">
 </head>
 <body>
 <h1>Testresultaten Gouda Tijdmachine Viewer API</h1>
