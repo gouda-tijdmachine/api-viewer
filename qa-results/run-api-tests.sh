@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# API Testing Script for Interactieve Historische Kaart Viewer API
+# API Testing Script for Gouda Tijdmachine Viewer API
 # Tests all endpoints defined in the OpenAPI specification (except for clear cache)
 
 TOTAL_TESTS=0
@@ -31,7 +31,7 @@ echo '<!DOCTYPE html>
     </style>
 </head>
 <body>
-<h1>Testresultaten Interactieve Historische Kaart Viewer API</h1>
+<h1>Testresultaten Gouda Tijdmachine Viewer API</h1>
 <summary>
 ' > $TESTHTML
 
