@@ -5,35 +5,52 @@ class CacheService {
     private $local = true;
 
     public function __construct() {
-        if (CACHE_ENABLED) {
-            $this->redis = new Redis();
+        if (!CACHE_ENABLED) return;
 
-            $host = '127.0.0.1';
-            $port = 6379;
-            $env = getenv('REDIS_URL');
-            if (!empty($env)) {
-                $this->local = false;
+        $this->redis = new Redis();
 
-                $parsed = parse_url(getenv('REDIS_URL'));
-                $host = $parsed['host'];
-                $port = $parsed['port'];
-                $user = $parsed['user'] ?? null; // 'default'
-                $pass = $parsed['pass'];
+        $redisUrl = getenv('REDIS_URL');
+        $host = '127.0.0.1';
+        $port = 6379;
+        $user = null;
+        $pass = null;
+        $useTls = false;
+
+        if (!empty($redisUrl)) {
+            $this->local = false;
+
+            $parsed = parse_url($redisUrl);
+            $host = $parsed['host'] ?? $host;
+            $port = (int)($parsed['port'] ?? $port);
+            $user = $parsed['user'] ?? null;
+            $pass = $parsed['pass'] ?? null;
+
+            $scheme = strtolower($parsed['scheme'] ?? '');
+            $useTls = ($scheme === 'rediss' || $scheme === 'tls');
+        }
+
+        try {
+            $connectHost = $useTls ? ("tls://" . $host) : $host;
+
+            $timeout = 2.5;
+            $readTimeout = 2.5;
+
+            $this->redis->connect($connectHost, $port, $timeout);
+
+            if ($readTimeout !== null) {
+                $this->redis->setOption(Redis::OPT_READ_TIMEOUT, $readTimeout);
             }
 
-            try {
-                $this->redis->connect($host, $port);
-                if (!empty($pass)) {
-                    if (!empty($user)) {
-                        $this->redis->auth(['user' => $user, 'pass' => $pass]);
-                    } else {
-                        $this->redis->auth($pass);
-                    }
+            if (!empty($pass)) {
+                if (!empty($user)) {
+                    $this->redis->auth([$user, $pass]);
+                } else {
+                    $this->redis->auth($pass);
                 }
+            }
 
-            } catch (Exception $e) {
-                echo "Connection failed: " . $e->getMessage();
-            }            
+        } catch (Throwable $e) {
+            echo "Connection failed: " . $e->getMessage();
         }
     }
 
