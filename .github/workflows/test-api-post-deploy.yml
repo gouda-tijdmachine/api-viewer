@@ -21,16 +21,18 @@ jobs:
         run: |
           bash ./qa-results/run-api-tests.sh
 
-      - name: Commit QA results (qa-results branch)
+      - name: Commit API test results (main branch)
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          # Create/switch to a real branch (fixes detached HEAD)
-          git checkout -B qa-results
+          # Ensure we're on main (not detached)
+          git checkout main
+          git pull origin main
 
           git add qa-results/index.html
-          git commit -m "API tests results for ${{ github.event.client_payload.git.sha }}" || exit 0
+          git status
+          git diff --staged --name-only
 
-          # Push branch (force is OK because you're updating a generated report)
-          git push origin qa-results --force
+          git commit -m "API tests results for ${{ github.event.client_payload.git.sha }}" || exit 0
+          git push origin main
