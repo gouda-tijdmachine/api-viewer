@@ -8,31 +8,38 @@ jobs:
   qa:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # REQUIRED to push commits
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      # 1. Checkout the main branch directly
+      - name: Checkout main branch
+        uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.client_payload.git.sha }}
+          ref: main
+          fetch-depth: 0 # Fetches all history so push works smoothly
 
+      # 2. Run API tests 
+      # Note: We run this AFTER checking out main so the generated 
+      # index.html stays in the working directory of the correct branch.
       - name: Run API tests
         env:
-          BASE_URL: https://api-viewer.goudatijdmachine.nl/
-
+          BASE_URL: https://api-viewer.goudatijdmachine.nl
+          # You might want to pass the SHA to your script if it needs it internally
+          DEPLOYED_SHA: ${{ github.event.client_payload.git.sha }}
         run: |
           bash ./qa-results/run-api-tests.sh
 
-      - name: Commit API test results (main branch)
+      # 3. Commit and Push
+      - name: Commit API test results
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          # Ensure we're on main (not detached)
-          git checkout main
-          git pull origin main
-
           git add qa-results/index.html
-          git status
-          git diff --staged --name-only
-
-          git commit -m "API tests results for ${{ github.event.client_payload.git.sha }}" || exit 0
-          git push origin main
+          
+          # Only commit if there are actual changes to the file
+          if git diff --staged --quiet; then
+            echo "No changes to test results. Skipping commit."
+          else
+            git commit -m "docs: update API test results for ${ { github.event.client_payload.git.sha } }"
+            git push origin main
+          fi
