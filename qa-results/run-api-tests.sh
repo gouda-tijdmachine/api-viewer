@@ -87,7 +87,7 @@ test_endpoint() {
     echo "Response time: ${response_time}ms"
     echo "<li><strong>Response time</strong>: ${response_time}ms</li>" >> $TESTHTML
 
-    if [ "$printbody" -ne "" ]; then
+    if [ -n "$printbody" ]; then
         echo "Response body: $body" | head -c 200
         #echo "<li><strong>Response body</strong>: <pre>$body</pre>" >> $TESTHTML
         if [ ${#body} -gt 200 ]; then
