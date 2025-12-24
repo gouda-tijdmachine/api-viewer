@@ -34,7 +34,7 @@
                     "Zoekresultaten"
                 ],
                 "summary": "Lijst met zoekresultaten met foto's",
-                "description": "Een set van foto's waar de zoekterm voorkomt in de beschrijving en/of een relatie heeft met de gespecificeerde straat. Wanneer er geen parameters zijn opgegeven wordt er een lijst van tien interessante foto's geretourneerd.",
+                "description": "Een set van foto's waar de zoekterm voorkomt in de beschrijving en/of een relatie heeft met de gespecificeerde straat. Wanneer er geen parameters zijn opgegeven wordt er - voor testdoeleinden - een lijst van tien interessante foto's geretourneerd.",
                 "parameters": [
                     {
                         "name": "q",
@@ -297,7 +297,7 @@
                     "Zoekresultaten"
                 ],
                 "summary": "Lijst met zoekresultaten met panden",
-                "description": "Een set van panden waar de zoekterm voorkomt in de straatnaam en/of een relatie heeft met de gespecificeerde straat en/of de gespecificeerde status heeft. Wanneer er geen parameters zijn opgegeven wordt er een lijst van tien interessante panden geretourneerd.",
+                "description": "Een set van panden waar de zoekterm voorkomt in de straatnaam en/of een relatie heeft met de gespecificeerde straat en/of de gespecificeerde status heeft. Wanneer er geen parameters zijn opgegeven wordt er - voor testdoeleinden - een lijst van tien interessante panden geretourneerd.",
                 "parameters": [
                     {
                         "name": "q",
@@ -465,7 +465,7 @@
                     "Zoekresultaten"
                 ],
                 "summary": "Lijst met zoekresultaten met personen",
-                "description": "Een set van personen - dit kunnen bewoners zijn of eigenaars - waar de zoekterm voorkomt in de naam en/of een relatie heeft met de gespecificeerde straat. Wanneer er geen parameters zijn opgegeven wordt er een lijst van tien interessante personen geretourneerd.",
+                "description": "Een set van personen - dit kunnen bewoners zijn of eigenaars - waar de zoekterm voorkomt in de naam en/of een relatie heeft met de gespecificeerde straat. Wanneer er geen parameters zijn opgegeven wordt er - voor testdoeleinden - een lijst van tien interessante personen geretourneerd.",
                 "parameters": [
                     {
                         "name": "q",
@@ -569,7 +569,7 @@
                     "Lijsten"
                 ],
                 "summary": "Geeft een lijst met straten",
-                "description": "Een op naam gesorteerde lijst van straatnamen. **Let op**: dit is (nog) een beperkte, hard-gecodeerde lijst van straten.",
+                "description": "Een op naam gesorteerde lijst van straatnamen.",
                 "responses": {
                     "200": {
                         "description": "successful operation",
@@ -603,7 +603,7 @@
                     "Lijsten"
                 ],
                 "summary": "Geeft een lijst met tijdvakken",
-                "description": "Een op jaartal gesorteerde lijst van tijdvakken zoals deze ook in de canons gebruikt wordt.",
+                "description": "Een op jaartal gesorteerde lijst van tijdvakken.",
                 "responses": {
                     "200": {
                         "description": "successful operation",
