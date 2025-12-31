@@ -1,31 +1,37 @@
 export default function middleware(request) {
-  const { pathname, search, origin } = new URL(request.url);
+  // 1. Get the absolute raw URL string to avoid pre-processing/collapsing
+  const rawUrl = request.url; 
+  const urlObj = new URL(rawUrl);
+  const { origin, search } = urlObj;
 
+  // 2. Define your prefixes
   const prefixes = ["/pand", "/persoon", "/foto"];
 
-  // 1. Check if the request starts with our prefixes + a slash
-  const prefix = prefixes.find((p) => pathname.startsWith(p + "/"));
+  // 3. Find if the path starts with a prefix
+  // We use urlObj.pathname here just for the check
+  const prefix = prefixes.find((p) => urlObj.pathname.startsWith(p + "/"));
   if (!prefix) return;
 
-  // 2. Extract the "raw" remainder directly from the pathname string
-  // This bypasses any logic that might have already tried to parse it
-  const rawRemainder = pathname.slice(prefix.length + 1);
+  // 4. Extract the remainder from the RAW URL string, not the normalized pathname
+  // This ensures we catch "https://" before it becomes "https:/"
+  // Logic: find prefix + "/", then take everything after it
+  const searchPattern = `${prefix}/`;
+  const startIndex = rawUrl.indexOf(searchPattern) + searchPattern.length;
+  const rawRemainder = rawUrl.slice(startIndex).split('?')[0]; // exclude query params
 
-  // 3. Check if it's already encoded
-  // We look for %2F (slash) or %3A (colon) specifically
-  const isEncoded = /%2F|%3A/i.test(rawRemainder);
-  if (!rawRemainder || isEncoded) return;
+  // 5. Validation: If it's already encoded, don't touch it
+  if (!rawRemainder || /%[0-9A-Fa-f]{2}/.test(rawRemainder)) return;
 
-  // 4. Encode the remainder
+  // 6. Force Encode
   // This turns "https://n2t.net/..." into "https%3A%2F%2Fn2t.net%2F..."
-  const encoded = encodeURIComponent(rawRemainder);
+  const encoded = encodeURIComponent(decodeURIComponent(rawRemainder));
 
-  // 5. Construct the final URL string manually
-  // Using a string template prevents the URL object from "normalizing" the slashes
+  // 7. Manual Redirect Construction
   const destination = `${origin}${prefix}/${encoded}${search}`;
 
-  // 6. Redirect
-  return Response.redirect(destination, 308);
+  // IMPORTANT: Use a 307 (Temporary) while testing to avoid browser caching!
+  // Switch back to 308 (Permanent) once you confirm it works.
+  return Response.redirect(destination, 307);
 }
 
 export const config = {
