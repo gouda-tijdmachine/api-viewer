@@ -1,41 +1,31 @@
-// middleware.mjs
-function encodeAsSinglePathSegment(value) {
-  // Encodes characters like / : ? & into their %-equivalents
-  return encodeURIComponent(value);
-}
-
-function alreadyLooksEncoded(s) {
-  // Check if the string already contains percent-encoded characters
-  return /%[0-9A-Fa-f]{2}/.test(s);
-}
-
 export default function middleware(request) {
-  const url = new URL(request.url);
-  const { pathname } = url;
+  const { pathname, search, origin } = new URL(request.url);
 
   const prefixes = ["/pand", "/persoon", "/foto"];
 
-  // 1. Identify which prefix we are dealing with
+  // 1. Check if the request starts with our prefixes + a slash
   const prefix = prefixes.find((p) => pathname.startsWith(p + "/"));
-  
-  // If the path is exactly the prefix (e.g., "/pand") or no match, skip
   if (!prefix) return;
 
-  // 2. Extract the identifier
-  // This takes everything after "/pand/" regardless of how many slashes follow
+  // 2. Extract the "raw" remainder directly from the pathname string
+  // This bypasses any logic that might have already tried to parse it
   const rawRemainder = pathname.slice(prefix.length + 1);
 
-  // 3. Safety Check
-  if (!rawRemainder || alreadyLooksEncoded(rawRemainder)) return;
+  // 3. Check if it's already encoded
+  // We look for %2F (slash) or %3A (colon) specifically
+  const isEncoded = /%2F|%3A/i.test(rawRemainder);
+  if (!rawRemainder || isEncoded) return;
 
-  // 4. Encode the entire remainder
-  // "https://n2t.net/..." becomes "https%3A%2F%2Fn2t.net%2F..."
-  const encoded = encodeAsSinglePathSegment(rawRemainder);
+  // 4. Encode the remainder
+  // This turns "https://n2t.net/..." into "https%3A%2F%2Fn2t.net%2F..."
+  const encoded = encodeURIComponent(rawRemainder);
 
-  // 5. Redirect to the normalized URL
-  url.pathname = `${prefix}/${encoded}`;
-  
-  return Response.redirect(url.toString(), 308);
+  // 5. Construct the final URL string manually
+  // Using a string template prevents the URL object from "normalizing" the slashes
+  const destination = `${origin}${prefix}/${encoded}${search}`;
+
+  // 6. Redirect
+  return Response.redirect(destination, 308);
 }
 
 export const config = {
