@@ -1,13 +1,17 @@
 {
-    "openapi": "3.0.4",
+    "openapi": "3.1.0",
     "info": {
         "title": "Gouda Tijdmachine Viewer API",
         "description": "Deze [getestte](https://gouda-tijdmachine.github.io/api-viewer/) read-only REST API voorziet in de informatiebehoefte qua foto's, panden, straten en personen; alle geïdentifieerd met een persistente HTTP URI op basis van ARK.<br><br>**N.B.**: de beschikbare data betreft met name de 14 panden aan de Wijdstraat (oostzijde) zoals deze in [project Wijdstraat](https://www.goudatijdmachine.nl/project-wijdstraat/locaties/) zijn gekoppeld, dus **nog niet** geheel Gouda.",
-        "version": "v1.3"
+        "version": "v1.3.2",
+        "contact": {
+            "name": "Gouda Tijdmachine",
+            "url": "https://www.goudatijdmachine.nl/contact/"
+            }
     },
     "servers": [
 		{
-            "url": "https://api-viewer.goudatijdmachine.nl/", "description": "Production API"
+            "url": "https://api-viewer.goudatijdmachine.nl", "description": "Production API"
         },
         {
             "url": "https://www.goudatijdmachine.nl/api-viewer", "description": "Development API"
@@ -30,6 +34,7 @@
     "paths": {
         "/fotos": {
             "get": {
+				"operationId": "searchPhotos",
                 "tags": [
                     "Zoekresultaten"
                 ],
@@ -135,6 +140,7 @@
         },
         "/foto/{identifier}": {
             "get": {
+				"operationId": "getPhotoInformationByIdentifier",
                 "tags": [
                     "Detailinformatie"
                 ],
@@ -184,6 +190,7 @@
         },
         "/pand/{identifier}": {
             "get": {
+				"operationId": "getHouseInformationByIdentifier",
                 "tags": [
                     "Detailinformatie"
                 ],
@@ -233,6 +240,7 @@
         },
         "/pandgeometrieen/{jaar}": {
             "get": {
+				"operationId": "getHouseGeometriesByYear",
                 "tags": [
                     "Lijsten"
                 ],
@@ -293,6 +301,7 @@
         },
         "/panden": {
             "get": {
+				"operationId": "searchHouses",
                 "tags": [
                     "Zoekresultaten"
                 ],
@@ -412,6 +421,7 @@
         },
         "/persoon/{identifier}": {
             "get": {
+				"operationId": "getPersonInformationByIdentifier",
                 "tags": [
                     "Detailinformatie"
                 ],
@@ -461,6 +471,7 @@
         },
         "/personen": {
             "get": {
+				"operationId": "searchPersons",
                 "tags": [
                     "Zoekresultaten"
                 ],
@@ -565,6 +576,7 @@
         },
         "/straten": {
             "get": {
+				"operationId": "getStreetlist",
                 "tags": [
                     "Lijsten"
                 ],
@@ -599,6 +611,7 @@
         },
         "/tijdvakken": {
             "get": {
+				"operationId": "getPeriodsList",
                 "tags": [
                     "Lijsten"
                 ],
@@ -633,6 +646,7 @@
         },
         "/clear_cache": {
             "post": {
+				"operationId": "doClearCache",
                 "tags": [
                     "Lijsten"
                 ],
@@ -803,7 +817,7 @@
                     },
                     "datering": {
                         "type": "string",
-                        "example": 1950,
+                        "example": "1950",
                         "description": "Het jaar (of periode) waarin de afbeelding is gemaakt."
                     },
                     "bronorganisatie": {
@@ -860,7 +874,7 @@
                     },
                     "datering": {
                         "type": "string",
-                        "example": 1950,
+                        "example": "1950",
                         "description": "Het jaar waarin de afbeelding is gemaakt."
                     },
                     "bronorganisatie": {
@@ -925,7 +939,6 @@
                 }
             },
             "GeoJSONGeometry": {
-                "type": "object",
                 "oneOf": [
                     {
                         "$ref": "#/components/schemas/GeoJSONPoint"
@@ -1220,12 +1233,12 @@
                     },
                     "jaar_start": {
                         "type": "integer",
-                        "example": "1700",
+                        "example": 1700,
                         "description": "Beginjaar van het tijdvak."
                     },
                     "jaar_einde": {
                         "type": "integer",
-                        "example": "1799",
+                        "example": 1799,
                         "description": "Beginjaar van het tijdvak."
                     }
                 }
