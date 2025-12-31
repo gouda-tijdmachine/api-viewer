@@ -1,36 +1,40 @@
+// middleware.mjs
+
 export default function middleware(request) {
-  // 1. Get the absolute raw URL string to avoid pre-processing/collapsing
+  // 1. Get the absolute raw URL string
   const rawUrl = request.url; 
-  const urlObj = new URL(rawUrl);
-  const { origin, search } = urlObj;
-
-  // 2. Define your prefixes
+  
   const prefixes = ["/pand", "/persoon", "/foto"];
-
-  // 3. Find if the path starts with a prefix
-  // We use urlObj.pathname here just for the check
-  const prefix = prefixes.find((p) => urlObj.pathname.startsWith(p + "/"));
+  
+  // 2. Find which prefix is being used
+  const prefix = prefixes.find(p => rawUrl.includes(`${p}/`));
   if (!prefix) return;
 
-  // 4. Extract the remainder from the RAW URL string, not the normalized pathname
-  // This ensures we catch "https://" before it becomes "https:/"
-  // Logic: find prefix + "/", then take everything after it
+  // 3. Extract the identifier after the prefix
+  // Example: .../pand/https:/n2t.net/... -> remainder: "https:/n2t.net/..."
   const searchPattern = `${prefix}/`;
   const startIndex = rawUrl.indexOf(searchPattern) + searchPattern.length;
-  const rawRemainder = rawUrl.slice(startIndex).split('?')[0]; // exclude query params
+  let rawRemainder = rawUrl.slice(startIndex).split('?')[0];
 
-  // 5. Validation: If it's already encoded, don't touch it
-  if (!rawRemainder || /%[0-9A-Fa-f]{2}/.test(rawRemainder)) return;
+  // 4. THE REPAIR: If the infrastructure collapsed https:// to https:/, fix it.
+  // This is the critical step for "dumb clients"
+  if (rawRemainder.startsWith("https:/") && !rawRemainder.startsWith("https://")) {
+    rawRemainder = rawRemainder.replace("https:/", "https://");
+  } else if (rawRemainder.startsWith("http:/") && !rawRemainder.startsWith("http://")) {
+    rawRemainder = rawRemainder.replace("http:/", "http://");
+  }
 
-  // 6. Force Encode
-  // This turns "https://n2t.net/..." into "https%3A%2F%2Fn2t.net%2F..."
-  const encoded = encodeURIComponent(decodeURIComponent(rawRemainder));
+  // 5. If it's already properly encoded, stop here to avoid loops
+  if (/%[0-9A-Fa-f]{2}/.test(rawRemainder)) return;
 
-  // 7. Manual Redirect Construction
-  const destination = `${origin}${prefix}/${encoded}${search}`;
+  // 6. Encode the REPAIRED remainder
+  const encodedIdentifier = encodeURIComponent(rawRemainder);
 
-  // IMPORTANT: Use a 307 (Temporary) while testing to avoid browser caching!
-  // Switch back to 308 (Permanent) once you confirm it works.
+  // 7. Construct destination manually to avoid URL object normalization
+  const urlObj = new URL(rawUrl);
+  const destination = `${urlObj.origin}${prefix}/${encodedIdentifier}${urlObj.search}`;
+
+  // Use 307 for testing so your browser doesn't cache the result
   return Response.redirect(destination, 307);
 }
 
