@@ -1,43 +1,42 @@
-// middleware.mjs
+export default function middleware(request: Request) {
+  const url = new URL(request.url);
 
-export default function middleware(request) {
-  const rawUrl = request.url;
   const prefixes = ["/pand", "/persoon", "/foto"];
-
-  // 1. Find the prefix
-  const prefix = prefixes.find(p => rawUrl.includes(`${p}/`));
+  const prefix = prefixes.find(
+    (p) => url.pathname === p || url.pathname === `${p}/` || url.pathname.startsWith(`${p}/`)
+  );
   if (!prefix) return;
 
-  // 2. Extract everything after the prefix
-  const searchPattern = `${prefix}/`;
-  const startIndex = rawUrl.indexOf(searchPattern) + searchPattern.length;
-  // Get the identifier and the search params separately
-  const [fullIdentifier, search] = rawUrl.slice(startIndex).split('?');
+  // OPTION 3: /pand?identifier=...  ->  /pand/<encoded>
+  if (url.pathname === prefix || url.pathname === `${prefix}/`) {
+    const identifier = url.searchParams.get("identifier");
+    if (!identifier) return; // or: return new Response("Missing identifier", { status: 400 });
 
-  let identifier = fullIdentifier;
-
-  // 3. REPAIR: Infrastructure often collapses // to /
-  // We restore it so encodeURIComponent produces the correct string
-  if (identifier.startsWith("https:/") && !identifier.startsWith("https://")) {
-    identifier = identifier.replace("https:/", "https://");
-  } else if (identifier.startsWith("http:/") && !identifier.startsWith("http://")) {
-    identifier = identifier.replace("http:/", "http://");
+    const dest = new URL(url.toString());
+    dest.pathname = `${prefix}/${encodeURIComponent(identifier)}`;
+    dest.search = ""; // drop query (optional)
+    return Response.redirect(dest.toString(), 308);
   }
 
-  // 4. CHECK: If it still contains a literal ":" or "/", it's not encoded enough
-  const needsEncoding = identifier.includes(":") || identifier.includes("/");
-  if (!needsEncoding) return;
+  // Everything after "/pand/" (may include slashes/colons)
+  const rawRemainder = url.pathname.slice((prefix + "/").length);
+  if (!rawRemainder) return;
 
-  // 5. ENCODE: This turns "https://n2t.net/ark:/..." into "https%3A%2F%2Fn2t.net%2Fark%3A%2F..."
-  const encodedIdentifier = encodeURIComponent(identifier);
+  // If already percent-encoded, don't touch it
+  if (/%[0-9A-Fa-f]{2}/.test(rawRemainder)) return;
 
-  // 6. REDIRECT: Use a string-based URL to prevent the URL object from "helping"
-  const urlObj = new URL(rawUrl);
-  const searchPart = search ? `?${search}` : "";
-  const destination = `${urlObj.origin}${prefix}/${encodedIdentifier}${searchPart}`;
+  // Repair Vercel's "//" collapse in scheme: "https:/" -> "https://"
+  let identifier = rawRemainder
+    .replace(/^https:\//, "https://")
+    .replace(/^http:\//, "http://");
 
-  // Use 307 (Temporary) for testing to avoid local browser cache issues!
-  return Response.redirect(destination, 307);
+  // Encode whole remainder as ONE path segment
+  const encoded = encodeURIComponent(identifier);
+
+  const dest = new URL(url.toString());
+  dest.pathname = `${prefix}/${encoded}`;
+  // keep query params if any (usually there aren't here)
+  return Response.redirect(dest.toString(), 308);
 }
 
 export const config = {
