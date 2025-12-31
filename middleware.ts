@@ -1,66 +1,43 @@
-// middleware.mjs - for dumb clients which don't properly url-encode the identifier
-
+// middleware.mjs
 function encodeAsSinglePathSegment(value) {
-  // Encode everything so it becomes exactly ONE safe path segment.
+  // Encodes characters like / : ? & into their %-equivalents
   return encodeURIComponent(value);
 }
 
 function alreadyLooksEncoded(s) {
-  // If it contains percent-escapes, assume it's already encoded enough.
+  // Check if the string already contains percent-encoded characters
   return /%[0-9A-Fa-f]{2}/.test(s);
 }
 
 export default function middleware(request) {
   const url = new URL(request.url);
-  const { pathname, searchParams } = url;
+  const { pathname } = url;
 
-  // ---- CONFIG: add more prefixes if needed ----
   const prefixes = ["/pand", "/persoon", "/foto"];
-  // --------------------------------------------
 
-  // Find which prefix this request matches
-  const prefix = prefixes.find((p) => pathname === p || pathname === p + "/" || pathname.startsWith(p + "/"));
-  if (!prefix) return; // do nothing for other routes
+  // 1. Identify which prefix we are dealing with
+  const prefix = prefixes.find((p) => pathname.startsWith(p + "/"));
+  
+  // If the path is exactly the prefix (e.g., "/pand") or no match, skip
+  if (!prefix) return;
 
-  const isBare = pathname === prefix || pathname === prefix + "/";
+  // 2. Extract the identifier
+  // This takes everything after "/pand/" regardless of how many slashes follow
+  const rawRemainder = pathname.slice(prefix.length + 1);
 
-  // OPTION 3: /pand?identifier=...  ->  /pand/<encoded identifier>
-  if (isBare) {
-    const identifier = searchParams.get("identifier");
-    if (identifier) {
-      const encoded = encodeAsSinglePathSegment(identifier);
-      url.pathname = `${prefix}/${encoded}`;
-      url.search = ""; // drop query string (optional)
-      return Response.redirect(url.toString(), 308);
-    }
-    // If you want bare /pand to be allowed, remove the next two lines:
-    // return new Response("Missing identifier", { status: 400 });
-    return; // let it fall through to your app
-  }
-
-  // PATH NORMALIZATION: /pand/<raw> -> /pand/<encoded>
-  // Take everything AFTER the prefix + "/" (can include slashes, colons, etc.)
-  const rawRemainder = pathname.slice((prefix + "/").length);
-
-  // If remainder is already encoded, leave it alone
+  // 3. Safety Check
   if (!rawRemainder || alreadyLooksEncoded(rawRemainder)) return;
 
-  // If it contains characters that should be encoded in a single segment,
-  // redirect to the encoded version.
-  // This also handles cases where the remainder contains slashes.
+  // 4. Encode the entire remainder
+  // "https://n2t.net/..." becomes "https%3A%2F%2Fn2t.net%2F..."
   const encoded = encodeAsSinglePathSegment(rawRemainder);
 
-  // Avoid redirect loops (paranoia)
-  if (encoded === rawRemainder) return;
-
+  // 5. Redirect to the normalized URL
   url.pathname = `${prefix}/${encoded}`;
-  // Keep other query params if any (your call). Usually keep them:
-  // url.search stays as-is
-
+  
   return Response.redirect(url.toString(), 308);
 }
 
-// Run only where needed (cheaper/faster)
 export const config = {
   matcher: ["/pand/:path*", "/persoon/:path*", "/foto/:path*"],
 };
