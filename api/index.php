@@ -22,11 +22,14 @@ $apiHandler = new ApiHandler();
 
 $router->get('/fotos', [$apiHandler, 'getFotos']);
 $router->get('/foto/{identifier}', [$apiHandler, 'getFoto']);
+$router->get('/foto', [$apiHandler, 'getFoto']);
 $router->get('/panden', [$apiHandler, 'getPanden']);
 $router->get('/pandgeometrieen/{jaar}', [$apiHandler, 'getJaarPanden']);
 $router->get('/pand/{identifier}', [$apiHandler, 'getPand']);
+$router->get('/pand', [$apiHandler, 'getPand']);
 $router->get('/personen', [$apiHandler, 'getPersonen']);
 $router->get('/persoon/{identifier}', [$apiHandler, 'getPersoon']);
+$router->get('/persoon', [$apiHandler, 'getPersoon']);
 $router->get('/straten', [$apiHandler, 'getStraten']);
 $router->get('/tijdvakken', [$apiHandler, 'getTijdvakken']);
 $router->post('/clear_cache', [$apiHandler, 'clearCache']);

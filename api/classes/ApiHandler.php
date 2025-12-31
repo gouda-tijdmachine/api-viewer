@@ -130,7 +130,10 @@ class ApiHandler
 
     public function getPersoon(array $params): void {
         try {
-            $identifier = $this->validateAndDecodeIdentifier($params['identifier'] ?? null);
+            $paramIdentifier = $params['identifier'] ?? null;
+            $identifier = (!empty($paramIdentifier) && $paramIdentifier !== '{identifier}')
+                ? $this->validateAndDecodeIdentifier($paramIdentifier)
+                : $this->validateAndDecodeIdentifier(ResponseHelper::getQueryParam('identifier'));
             if ($identifier === null) {
                 return;
             }
@@ -150,7 +153,10 @@ class ApiHandler
 
     public function getPand(array $params): void {
         try {
-            $identifier = $this->validateAndDecodeIdentifier($params['identifier'] ?? null);
+            $paramIdentifier = $params['identifier'] ?? null;
+            $identifier = (!empty($paramIdentifier) && $paramIdentifier !== '{identifier}')
+                ? $this->validateAndDecodeIdentifier($paramIdentifier)
+                : $this->validateAndDecodeIdentifier(ResponseHelper::getQueryParam('identifier'));
             if ($identifier === null) {
                 return;
             }
@@ -170,7 +176,10 @@ class ApiHandler
 
     public function getFoto(array $params): void {
         try {
-            $identifier = $this->validateAndDecodeIdentifier($params['identifier'] ?? null);
+            $paramIdentifier = $params['identifier'] ?? null;
+            $identifier = (!empty($paramIdentifier) && $paramIdentifier !== '{identifier}')
+                ? $this->validateAndDecodeIdentifier($paramIdentifier)
+                : $this->validateAndDecodeIdentifier(ResponseHelper::getQueryParam('identifier'));
             if ($identifier === null) {
                 return;
             }
