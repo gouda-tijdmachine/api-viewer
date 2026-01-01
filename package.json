@@ -1,15 +1,4 @@
 {
   "name": "php-vercel-routing-middleware",
-  "private": true,
-  "dependencies": {
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest"
-  },
-  "devDependencies": {
-    "typescript": "latest",
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest"
-  }
+  "private": true
 }
