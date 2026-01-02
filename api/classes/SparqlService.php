@@ -417,7 +417,8 @@ SELECT * WHERE {
   <'.$identifier.'> sdo:spatialCoverage/sdo:geo/geo:hasGeometry/geo:asWKT ?WKT1 .
   ?identifier geo:hasGeometry/geo:asWKT ?WKT2 ;
               sdo:name ?titel ;
-              o:media/sdo:thumbnailUrl ?thumbnail .
+              o:media/sdo:thumbnailUrl ?thumbnail ;
+              o:primary_media/o:source ?iiif_info_json .
   BIND(geof:distance(?WKT1, ?WKT2) AS ?afstand)
 }
 ORDER BY ASC(?afstand)
@@ -526,7 +527,6 @@ SELECT ?identifier ?naam ?beroep ?datering WHERE {
       }
       $straaturi[$adres['straaturi']['value']] = 1;
     }
-    
     return [join(", ", array_keys($adres_array)), array_keys($straaturi)];
   }
 

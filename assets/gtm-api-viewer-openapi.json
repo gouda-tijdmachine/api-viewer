@@ -3,7 +3,7 @@
     "info": {
         "title": "Gouda Tijdmachine Viewer API",
         "description": "Deze [getestte](https://gouda-tijdmachine.github.io/api-viewer/) read-only REST API voorziet in de informatiebehoefte qua foto's, panden, straten en personen; alle geïdentifieerd met een persistente HTTP URI op basis van ARK.<br><br>**N.B.**: de beschikbare data betreft met name de 14 panden aan de Wijdstraat (oostzijde) zoals deze in [project Wijdstraat](https://www.goudatijdmachine.nl/project-wijdstraat/locaties/) zijn gekoppeld, dus **nog niet** geheel Gouda.",
-        "version": "v1.3.2",
+        "version": "v1.3.3",
         "contact": {
             "name": "Gouda Tijdmachine",
             "url": "https://www.goudatijdmachine.nl/contact/"
@@ -918,7 +918,13 @@
                         "format": "uri",
                         "example": "https://www.goudatijdmachine.nl/omeka/files/medium/70d726f9642726c3e7a0080536cc43715fe8e025.jpg",
                         "description": "Een kleine weergave van de afbeelding (veelal 200 pixels bij landschapsformaat en 200px hoog bij portretformaat."
-                    }
+                    },
+                    "iiif_info_json": {
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://images.memorix.nl/sahm/iiif/c8a7c04c-a2b4-99cf-3999-18d6b6478563/info.json",
+                        "description": "De URL van de IIIF Image API info.json voor de afbeelding in een IIIF client zoals [OpenSeadragon](https://openseadragon.github.io/)."
+                    },
                 }
             },
             "GeoJSONFeature": {

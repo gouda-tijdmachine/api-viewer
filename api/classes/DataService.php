@@ -365,7 +365,8 @@ class DataService {
             $fotos_dichtbij[] = [
                 'identifier' => $foto_dichtbij['identifier']['value'] ?? '',
                 'titel' => $foto_dichtbij['titel']['value'] ?? '',
-                'thumbnail' => $foto_dichtbij['thumbnail']['value'] ?? ''
+                'thumbnail' => $foto_dichtbij['thumbnail']['value'] ?? '',
+                'iiif_info_json' => $foto_dichtbij['iiif_info_json']['value'] ?? '',
             ];
         }
 
