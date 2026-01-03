@@ -924,7 +924,7 @@
                         "format": "uri",
                         "example": "https://images.memorix.nl/sahm/iiif/c8a7c04c-a2b4-99cf-3999-18d6b6478563/info.json",
                         "description": "De URL van de IIIF Image API info.json voor de afbeelding in een IIIF client zoals [OpenSeadragon](https://openseadragon.github.io/)."
-                    },
+                    }
                 }
             },
             "GeoJSONFeature": {
