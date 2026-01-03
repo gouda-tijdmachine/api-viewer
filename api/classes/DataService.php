@@ -345,7 +345,7 @@ class DataService {
 
         $filtered = [
             'identifier' => $locatiepuntidentifier,
-            'naam' => "Locatiepjunt " . ($pand['naam']['value'] ?? ''),
+            'naam' => "Locatiepunt " . ($pand['naam']['value'] ?? ''),
             'datering' => "(nog niet geïmplementeerd)",
             'adressen' => $adressen,
             'personen' => $personen,
