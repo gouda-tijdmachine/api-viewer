@@ -93,7 +93,7 @@ test_endpoint() {
     echo "<li><strong>Response code</strong>: $http_code (expected $expected_status)</li>" >> $TESTHTML
 
     echo "Response time: ${response_time0}ms (no cache) / ${response_time}ms (with cache)"
-    echo "<li><strong>Response time</strong>: ${response_time}ms</li>" >> $TESTHTML
+    echo "<li><strong>Response time</strong>: ${response_time0}ms (no cache) / ${response_time}ms (with cache)</li>" >> $TESTHTML
 
     if [ -z "$printbody" ]; then
         echo "Response body: $body" | head -c 200
@@ -116,6 +116,13 @@ test_json_endpoint() {
 
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
+    # First run to warm up
+    start_time0=$(date +%s%3N)
+    response0=$(curl -s -w "\n%{http_code}" -X $method "$endpoint")
+    end_time0=$(date +%s%3N)
+    response_time0=$((end_time - start_time))
+
+    # Second run with filled cache
     start_time=$(date +%s%3N)
     response=$(curl -s -w "\n%{http_code}" -X $method "$endpoint")
     end_time=$(date +%s%3N)
@@ -152,8 +159,8 @@ test_json_endpoint() {
     echo "Response code: $http_code"
     echo "<li><strong>Response code</strong>: $http_code (expected $expected_status)</li>" >> $TESTHTML
 
-    echo "Response time: ${response_time}ms"
-    echo "<li><strong>Response time</strong>: ${response_time}ms</li>" >> $TESTHTML
+    echo "Response time: ${response_time0}ms (no cache) / ${response_time}ms (with cache)"
+    echo "<li><strong>Response time</strong>: ${response_time0}ms (no cache) / ${response_time}ms (with cache)</li>" >> $TESTHTML
 
     body_preview="${body:0:250}"    
     echo "Response body: $body_preview"
