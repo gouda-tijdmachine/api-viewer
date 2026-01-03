@@ -41,7 +41,7 @@ class DataService {
         foreach ($tijdvakken as $tijdvak) {
             $results[] = [
                 'identifier' => $tijdvak['identifier']['value'],
-                'naam' => $tijdvak['identifier']['naam'],
+                'naam' => $tijdvak['naam']['value'],
                 'naam_alt' => $tijdvak['naam_alt']['value'] ?? null,
                 'omschrijving' => $tijdvak['omschrijving']['value'] ?? null,
                 'jaar_start' => $tijdvak['startjaar']['value'] ?? null,
