@@ -39,13 +39,12 @@ class DataService {
         $tijdvakken = $this->sparqlService->get_tijdvakken();
         $results = [];
         foreach ($tijdvakken as $tijdvak) {
-            $naam = $tijdvak['naam']['value'] ?? '';
-            if (!empty($tijdvak['naam_alt']['value'])) {
-                $naam .= ' (' . $tijdvak['naam_alt']['value'] . ')';
-            }
+            # Tijdelijke oplossing om periode uit naam te halen
+            $naam = preg_replace("/\s\(.*\)/","",$tijdvak['naam']['value']);
             $results[] = [
                 'identifier' => $tijdvak['identifier']['value'] ?? '',
                 'naam' => $naam,
+                'naam_alt' => $tijdvak['naam_alt']['value'] ?? null,
                 'omschrijving' => $tijdvak['omschrijving']['value'] ?? null,
                 'jaar_start' => $tijdvak['startjaar']['value'] ?? null,
                 'jaar_einde' => $tijdvak['eindjaar']['value'] ?? null

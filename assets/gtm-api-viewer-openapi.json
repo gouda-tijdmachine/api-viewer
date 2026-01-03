@@ -3,7 +3,7 @@
     "info": {
         "title": "Gouda Tijdmachine Viewer API",
         "description": "Deze [getestte](https://gouda-tijdmachine.github.io/api-viewer/) read-only REST API voorziet in de informatiebehoefte qua foto's, panden, straten en personen; alle geïdentifieerd met een persistente HTTP URI op basis van ARK.<br><br>**N.B.**: de beschikbare data betreft met name de 14 panden aan de Wijdstraat (oostzijde) zoals deze in [project Wijdstraat](https://www.goudatijdmachine.nl/project-wijdstraat/locaties/) zijn gekoppeld, dus **nog niet** geheel Gouda.",
-        "version": "v1.3.3",
+        "version": "v1.3.4",
         "contact": {
             "name": "Gouda Tijdmachine",
             "url": "https://www.goudatijdmachine.nl/contact/"
@@ -1229,8 +1229,13 @@
                     },
                     "naam": {
                         "type": "string",
-                        "example": "18e eeuw (verlichting)",
-                        "description": "De naam van het tijdvak (met eventueel alternatieve naam)."
+                        "example": "18e eeuw",
+                        "description": "De naam van het tijdvak."
+                    },
+                    "naam_alt": {
+                        "type": "string",
+                        "example": "1701-1800",
+                        "description": "De naam van het tijdvak beschreven als periode."
                     },
                     "omschrijving": {
                         "type": "string",
@@ -1239,12 +1244,12 @@
                     },
                     "jaar_start": {
                         "type": "integer",
-                        "example": 1700,
+                        "example": 1701,
                         "description": "Beginjaar van het tijdvak."
                     },
                     "jaar_einde": {
                         "type": "integer",
-                        "example": 1799,
+                        "example": 1800,
                         "description": "Beginjaar van het tijdvak."
                     }
                 }
