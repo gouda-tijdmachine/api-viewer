@@ -62,6 +62,13 @@ test_endpoint() {
     echo -e "\n${YELLOW}Test $TOTAL_TESTS: $description${NC}"
     echo "<h3>Test $TOTAL_TESTS: $description</h3>" >> $TESTHTML
 
+    # First run to warm up
+    start_time0=$(date +%s%3N)
+    response0=$(curl -s -w "\n%{http_code}" -X $method "$endpoint")
+    end_time0=$(date +%s%3N)
+    response_time0=$((end_time - start_time))
+
+    # Second run with filled cache
     start_time=$(date +%s%3N)
     response=$(curl -s -w "\n%{http_code}" -X $method "$endpoint")
     end_time=$(date +%s%3N)
@@ -85,7 +92,7 @@ test_endpoint() {
     echo "Response code: $http_code"
     echo "<li><strong>Response code</strong>: $http_code (expected $expected_status)</li>" >> $TESTHTML
 
-    echo "Response time: ${response_time}ms"
+    echo "Response time: ${response_time0}ms (no cache) / ${response_time}ms (with cache)"
     echo "<li><strong>Response time</strong>: ${response_time}ms</li>" >> $TESTHTML
 
     if [ -z "$printbody" ]; then
@@ -162,6 +169,19 @@ test_json_endpoint() {
 
 echo -e "${CYAN}Starting API Tests...${NC}"
 echo "Base URL: $BASE_URL"
+
+# Clear cache before testing
+echo -e "\n${CYAN}Clearing API cache...${NC}"
+response=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/clear_cache")
+http_code=$(echo "$response" | tail -n1)
+body=$(echo "$response" | head -n -1)
+
+if [ "$http_code" -eq 200 ]; then
+    echo -e "${GREEN}✓ Cache cleared successfully${NC}"
+    echo "Response: $body"
+else
+    echo -e "${YELLOW}⚠ Cache clear returned status $http_code${NC}"
+fi
 
 # ** Lijsten
 
