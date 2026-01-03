@@ -66,7 +66,7 @@ test_endpoint() {
     start_time0=$(date +%s%3N)
     response0=$(curl -s -w "\n%{http_code}" -X $method "$endpoint")
     end_time0=$(date +%s%3N)
-    response_time0=$((end_time - start_time))
+    response_time0=$((end_time0 - start_time0))
 
     # Second run with filled cache
     start_time=$(date +%s%3N)
@@ -120,7 +120,7 @@ test_json_endpoint() {
     start_time0=$(date +%s%3N)
     response0=$(curl -s -w "\n%{http_code}" -X $method "$endpoint")
     end_time0=$(date +%s%3N)
-    response_time0=$((end_time - start_time))
+    response_time0=$((end_time0 - start_time0))
 
     # Second run with filled cache
     start_time=$(date +%s%3N)
