@@ -39,13 +39,10 @@ class DataService {
         $tijdvakken = $this->sparqlService->get_tijdvakken();
         $results = [];
         foreach ($tijdvakken as $tijdvak) {
-            $naam = $tijdvak['naam']['value'] ?? '';
-            if (!empty($tijdvak['naam_alt']['value'])) {
-                $naam .= ' (' . $tijdvak['naam_alt']['value'] . ')';
-            }
             $results[] = [
-                'identifier' => $tijdvak['identifier']['value'] ?? '',
-                'naam' => $naam,
+                'identifier' => $tijdvak['identifier']['value'],
+                'naam' => $tijdvak['naam']['value'],
+                'naam_alt' => $tijdvak['naam_alt']['value'] ?? null,
                 'omschrijving' => $tijdvak['omschrijving']['value'] ?? null,
                 'jaar_start' => $tijdvak['startjaar']['value'] ?? null,
                 'jaar_einde' => $tijdvak['eindjaar']['value'] ?? null
@@ -348,7 +345,7 @@ class DataService {
 
         $filtered = [
             'identifier' => $locatiepuntidentifier,
-            'naam' => "Locatiepjunt " . ($pand['naam']['value'] ?? ''),
+            'naam' => "Locatiepunt " . ($pand['naam']['value'] ?? ''),
             'datering' => "(nog niet geïmplementeerd)",
             'adressen' => $adressen,
             'personen' => $personen,
