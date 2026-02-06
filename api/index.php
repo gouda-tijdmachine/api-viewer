@@ -1,5 +1,35 @@
 <?php
 
+// Serve static files FIRST, before any other processing
+$requestUri = $_SERVER['REQUEST_URI'] ?? '';
+$path = parse_url($requestUri, PHP_URL_PATH);
+
+if (preg_match('#^/assets/(.+)$#', $path, $matches) || $path === '/favicon.ico') {
+    $file = ($path === '/favicon.ico') ? 'favicon.ico' : $matches[1];
+    $filePath = __DIR__ . '/../assets/' . $file;
+
+    // Security check
+    $realPath = realpath($filePath);
+    $assetsDir = realpath(__DIR__ . '/../assets');
+
+    if ($realPath && $assetsDir && strpos($realPath, $assetsDir) === 0 && is_file($realPath)) {
+        $ext = strtolower(pathinfo($realPath, PATHINFO_EXTENSION));
+        $mimes = [
+            'css' => 'text/css', 'js' => 'application/javascript',
+            'json' => 'application/json', 'svg' => 'image/svg+xml',
+            'ico' => 'image/x-icon', 'png' => 'image/png',
+            'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg',
+            'woff' => 'font/woff', 'woff2' => 'font/woff2'
+        ];
+
+        header('Content-Type: ' . ($mimes[$ext] ?? 'application/octet-stream'));
+        header('Cache-Control: public, max-age=31536000');
+        header('Access-Control-Allow-Origin: *');
+        readfile($realPath);
+        exit;
+    }
+}
+
 include 'config.php';
 
 require_once 'classes/Router.php';
