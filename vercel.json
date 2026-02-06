@@ -4,20 +4,8 @@
   },
   "routes": [
     {
-        "src": "/assets/(.*)",
-        "dest": "assets/$1"
-    },
-    {
-        "src": "/qa-results/(.*)",
-        "dest": "qa-results/$1"
-    },
-    {
-        "src": "/favicon\\.ico",
-        "dest": "assets/favicon.ico"
-    },
-    { 
-        "src": "/(.*)", 
-        "dest": "/api/index.php" 
+        "src": "/(.*)",
+        "dest": "/api/index.php"
     }
   ]
 }
