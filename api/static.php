@@ -1,14 +1,16 @@
 <?php
 // Serve static files from the assets directory
 
-$requestUri = $_SERVER['REQUEST_URI'];
-$path = parse_url($requestUri, PHP_URL_PATH);
+// Get the requested file from query parameter (passed by Vercel routing)
+$requestedFile = $_GET['file'] ?? '';
 
 // Map paths to actual files
-if ($path === '/favicon.ico') {
+if ($requestedFile === 'favicon.ico' || $requestedFile === '/favicon.ico') {
     $filePath = __DIR__ . '/../assets/favicon.ico';
-} elseif (preg_match('#^/assets/(.+)$#', $path, $matches)) {
-    $filePath = __DIR__ . '/../assets/' . $matches[1];
+} elseif (!empty($requestedFile)) {
+    // Remove leading slash if present
+    $requestedFile = ltrim($requestedFile, '/');
+    $filePath = __DIR__ . '/../assets/' . $requestedFile;
 } else {
     http_response_code(404);
     exit;

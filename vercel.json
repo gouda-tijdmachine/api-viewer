@@ -5,11 +5,11 @@
   "routes": [
     {
       "src": "/assets/(.*)",
-      "dest": "/api/static.php"
+      "dest": "/api/static.php?file=$1"
     },
     {
       "src": "/favicon\\.ico",
-      "dest": "/api/static.php"
+      "dest": "/api/static.php?file=favicon.ico"
     },
     {
       "src": "/(.*)",
