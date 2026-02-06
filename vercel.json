@@ -6,8 +6,6 @@
     }
   },
   "rewrites": [
-    { "source": "/assets/:path*", "destination": "/api/static.php?file=:path*" },
-    { "source": "/favicon.ico", "destination": "/api/static.php?file=favicon.ico" },
     { "source": "/(.*)", "destination": "/api/index.php" }
   ]
 }

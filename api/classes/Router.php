@@ -73,6 +73,10 @@ class Router
         #error_log("Route found: " . ($routeFound ? 'yes' : 'no') . " for path: $path");
 
         if (!$routeFound) {
+            // Try to serve static assets before falling back to docs
+            if ($this->serveAsset($path)) {
+                return;
+            }
             $this->serveDocs();
         }
     }
@@ -94,5 +98,61 @@ class Router
             http_response_code(404);
             echo json_encode(['error' => 'Route not found']);
         }
+    }
+
+    private function serveAsset($path)
+    {
+        // Check if this is an asset request
+        if (preg_match('#^/assets/(.+)$#', $path, $matches)) {
+            $file = $matches[1];
+        } elseif ($path === '/favicon.ico') {
+            $file = 'favicon.ico';
+        } else {
+            return false; // Not an asset request
+        }
+
+        $filePath = __DIR__ . '/../../assets/' . $file;
+
+        // Security: Resolve real path and ensure it's within assets directory
+        $realPath = realpath($filePath);
+        $assetsDir = realpath(__DIR__ . '/../../assets');
+
+        if (!$realPath || !$assetsDir || strpos($realPath, $assetsDir) !== 0) {
+            return false;
+        }
+
+        if (!file_exists($realPath) || !is_file($realPath)) {
+            return false;
+        }
+
+        // Determine MIME type
+        $extension = strtolower(pathinfo($realPath, PATHINFO_EXTENSION));
+        $mimeTypes = [
+            'css' => 'text/css',
+            'js' => 'application/javascript',
+            'json' => 'application/json',
+            'svg' => 'image/svg+xml',
+            'ico' => 'image/x-icon',
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'woff' => 'font/woff',
+            'woff2' => 'font/woff2',
+            'ttf' => 'font/ttf',
+            'eot' => 'application/vnd.ms-fontobject',
+        ];
+
+        $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
+
+        // Send headers and file content
+        header('Content-Type: ' . $mimeType);
+        header('Content-Length: ' . filesize($realPath));
+        header('Cache-Control: public, max-age=31536000, immutable');
+        header('Access-Control-Allow-Origin: *');
+
+        readfile($realPath);
+        return true;
     }
 }
