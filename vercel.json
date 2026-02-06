@@ -4,7 +4,12 @@
   },
   "routes": [
     {
-      "handle": "filesystem"
+      "src": "/assets/(.*)",
+      "dest": "/api/static.php"
+    },
+    {
+      "src": "/favicon\\.ico",
+      "dest": "/api/static.php"
     },
     {
       "src": "/(.*)",
