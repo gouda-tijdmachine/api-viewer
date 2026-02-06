@@ -1,6 +1,10 @@
 <?php
 // Serve static files from the assets directory
 
+// DEBUG - log what we receive
+error_log('static.php called with REQUEST_URI: ' . ($_SERVER['REQUEST_URI'] ?? 'undefined'));
+error_log('static.php GET params: ' . json_encode($_GET));
+
 // Get the requested file from query parameter (passed by Vercel routing)
 $requestedFile = $_GET['file'] ?? '';
 
@@ -12,7 +16,11 @@ if ($requestedFile === 'favicon.ico' || $requestedFile === '/favicon.ico') {
     $requestedFile = ltrim($requestedFile, '/');
     $filePath = __DIR__ . '/../assets/' . $requestedFile;
 } else {
-    http_response_code(404);
+    // DEBUG output if no file specified
+    header('Content-Type: text/plain');
+    echo "DEBUG: No file specified\n";
+    echo "REQUEST_URI: " . ($_SERVER['REQUEST_URI'] ?? 'undefined') . "\n";
+    echo "GET params: " . json_encode($_GET) . "\n";
     exit;
 }
 
