@@ -16,28 +16,13 @@ class Router
         $this->routes['POST'][$path] = $handler;
     }
 
-    #    public function put($path, $handler)
-    #    {
-    #        $this->routes['PUT'][$path] = $handler;
-    #    }
-
-    #    public function delete($path, $handler)
-    #    {
-    #        $this->routes['DELETE'][$path] = $handler;
-    #    }
-
     public function dispatch()
     {
         $requestMethod = $_SERVER['REQUEST_METHOD'];
         $requestUri = $_SERVER['REQUEST_URI'];
 
         $parsedUri = parse_url($requestUri);
-        $path = $parsedUri['path'];
-        error_log($requestUri);
-        #$basePath = '/viewer-api';
-        #if (strpos($path, $basePath) === 0) {
-        #    $path = substr($path, strlen($basePath));
-        #}
+        $path = preg_replace("/\/api-[a-z]+/", "", $parsedUri['path']);
 
         if (empty($path)) {
             $path = '/';
