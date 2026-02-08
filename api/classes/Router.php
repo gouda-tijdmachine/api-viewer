@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 class Router
 {
     private $routes = [];
@@ -31,7 +33,7 @@ class Router
 
         $parsedUri = parse_url($requestUri);
         $path = $parsedUri['path'];
-
+        error_log($requestUri);
         #$basePath = '/viewer-api';
         #if (strpos($path, $basePath) === 0) {
         #    $path = substr($path, strlen($basePath));
@@ -44,6 +46,7 @@ class Router
         if (!isset($this->routes[$requestMethod])) {
             http_response_code(405);
             echo json_encode(['error' => 'Method Not Allowed']);
+
             return;
         }
 
@@ -66,14 +69,12 @@ class Router
                 } else {
                     $handler($params);
                 }
+
                 break;
             }
         }
 
-        #error_log("Route found: " . ($routeFound ? 'yes' : 'no') . " for path: $path");
-
         if (!$routeFound) {
-            // Try to serve static assets before falling back to docs
             if ($this->serveAsset($path)) {
                 return;
             }
@@ -85,6 +86,7 @@ class Router
     {
         $pattern = preg_replace('/\{[^}]+\}/', '([^/]+)', $path);
         $pattern = str_replace('/', '\/', $pattern);
+
         return '/^' . $pattern . '$/';
     }
 
@@ -95,6 +97,7 @@ class Router
             header('Content-Type: text/html; charset=utf-8');
             readfile($docsPath);
         } else {
+            error_log("$docsPath not found");
             http_response_code(404);
             echo json_encode(['error' => 'Route not found']);
         }
@@ -102,22 +105,19 @@ class Router
 
     private function serveAsset($path)
     {
-        // Check if this is an asset request
-        if (preg_match('#^/assets/(.+)$#', $path, $matches)) {
+        if (preg_match('#/assets/(.+)$#', $path, $matches)) {
             $file = $matches[1];
         } elseif ($path === '/favicon.ico') {
             $file = 'favicon.ico';
         } else {
-            return false; // Not an asset request
+            return false;
         }
 
         $filePath = __DIR__ . '/../../assets/' . $file;
-
-        // Security: Resolve real path and ensure it's within assets directory
         $realPath = realpath($filePath);
         $assetsDir = realpath(__DIR__ . '/../../assets');
 
-        if (!$realPath || !$assetsDir || strpos($realPath, $assetsDir) !== 0) {
+        if (!$realPath || !$assetsDir || !str_starts_with($realPath, $assetsDir)) {
             return false;
         }
 
@@ -125,7 +125,6 @@ class Router
             return false;
         }
 
-        // Determine MIME type
         $extension = strtolower(pathinfo($realPath, PATHINFO_EXTENSION));
         $mimeTypes = [
             'css' => 'text/css',
@@ -153,6 +152,7 @@ class Router
         header('Access-Control-Allow-Origin: *');
 
         readfile($realPath);
+
         return true;
     }
 }

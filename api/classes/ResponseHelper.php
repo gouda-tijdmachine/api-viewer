@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 class ResponseHelper
 {
     public static function json($data, $statusCode = 200)
@@ -46,14 +48,13 @@ class ResponseHelper
 
     public static function getQueryParam($key, $default = null)
     {
-        #error_log("getQueryParam: key=$key, value=" . var_export(isset($_GET[$key]) ? $_GET[$key] : $default, true));
         return isset($_GET[$key]) ? $_GET[$key] : $default;
     }
 
     public static function getIntQueryParam($key, $default = null)
     {
         $value = self::getQueryParam($key, $default);
-        #error_log("getIntQueryParam: key=$key, value=" . var_export($value, true));
+
         return $value !== null ? (int)$value : null;
     }
 }

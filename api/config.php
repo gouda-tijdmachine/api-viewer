@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 define('CACHE_DURATION_SECONDS', 1209600);  # 14 dagen = 14*24*3600 seconden
 define('CACHE_ENABLED', true);
 define('SPARQL_ENDPOINT', 'https://www.goudatijdmachine.nl/sparql11');

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 require_once 'ResponseHelper.php';
 require_once 'DataService.php';
 
@@ -8,12 +10,14 @@ class ApiHandler
     private DataService $dataService;
     private CacheService $cache;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->dataService = new DataService();
         $this->cache = new CacheService();
     }
 
-    public function getStraten(array $params = []): void {
+    public function getStraten(array $params = []): void
+    {
         try {
             $straten = $this->dataService->getStraten();
             ResponseHelper::json($straten);
@@ -22,7 +26,8 @@ class ApiHandler
         }
     }
 
-    public function getTijdvakken(array $params = []): void {
+    public function getTijdvakken(array $params = []): void
+    {
         try {
             $tijdvakken = $this->dataService->getTijdvakken();
             ResponseHelper::json($tijdvakken);
@@ -31,23 +36,26 @@ class ApiHandler
         }
     }
 
-    public function getJaarPanden(array $params = []): void {
+    public function getJaarPanden(array $params = []): void
+    {
         try {
             $jaar = $params['jaar'] ?? null;
 
-            if (empty($jaar) || intval($jaar) == 0) {
+            if (empty($jaar) || (int) $jaar == 0) {
                 ResponseHelper::error('Missend of ongeldig jaartal.', 400, 'MISSING_JAAR');
+
                 return;
             }
 
-            $polygonen = $this->dataService->getJaarPanden(intval($jaar));
+            $polygonen = $this->dataService->getJaarPanden((int) $jaar);
             ResponseHelper::geoJson($polygonen);
         } catch (Exception $e) {
             $this->logAndReturnError($e, 'getJaarPanden');
         }
     }
 
-    public function getPanden(array $params = []): void {
+    public function getPanden(array $params = []): void
+    {
         try {
             $q = ResponseHelper::getQueryParam('q');
             $straatidentifier = ResponseHelper::getQueryParam('straat');
@@ -62,6 +70,7 @@ class ApiHandler
 
             if (!in_array($status, ['alle', 'afgebroken', 'bestaand'], true)) {
                 ResponseHelper::error('Ongeldige zoekvraag.', 422, 'INVALID_QUERY');
+
                 return;
             }
 
@@ -69,6 +78,7 @@ class ApiHandler
 
             if (empty($result['panden'])) {
                 ResponseHelper::error('Geen panden gevonden.', 404, 'NOT_FOUND');
+
                 return;
             }
 
@@ -78,7 +88,8 @@ class ApiHandler
         }
     }
 
-    public function getPersonen(array $params = []): void {
+    public function getPersonen(array $params = []): void
+    {
         try {
             $q = ResponseHelper::getQueryParam('q');
             $straat = ResponseHelper::getQueryParam('straat');
@@ -94,6 +105,7 @@ class ApiHandler
 
             if (empty($result['personen'])) {
                 ResponseHelper::error('Geen personen gevonden.', 404, 'NOT_FOUND');
+
                 return;
             }
 
@@ -103,7 +115,8 @@ class ApiHandler
         }
     }
 
-    public function getFotos(array $params = []): void {
+    public function getFotos(array $params = []): void
+    {
         try {
             $q = ResponseHelper::getQueryParam('q');
             $straat = ResponseHelper::getQueryParam('straat');
@@ -119,6 +132,7 @@ class ApiHandler
 
             if (empty($result['fotos'])) {
                 ResponseHelper::error('Geen foto\'s gevonden.', 404, 'NOT_FOUND');
+
                 return;
             }
 
@@ -128,7 +142,8 @@ class ApiHandler
         }
     }
 
-    public function getPersoon(array $params): void {
+    public function getPersoon(array $params): void
+    {
         try {
             $paramIdentifier = $params['identifier'] ?? null;
             $identifier = (!empty($paramIdentifier) && $paramIdentifier !== '{identifier}')
@@ -142,6 +157,7 @@ class ApiHandler
 
             if (!$persoon) {
                 ResponseHelper::error('Persoon niet gevonden.', 404, 'NOT_FOUND');
+
                 return;
             }
 
@@ -151,7 +167,8 @@ class ApiHandler
         }
     }
 
-    public function getPand(array $params): void {
+    public function getPand(array $params): void
+    {
         try {
             $paramIdentifier = $params['identifier'] ?? null;
             $identifier = (!empty($paramIdentifier) && $paramIdentifier !== '{identifier}')
@@ -165,6 +182,7 @@ class ApiHandler
 
             if (!$pand) {
                 ResponseHelper::error('Pand niet gevonden.', 404, 'NOT_FOUND');
+
                 return;
             }
 
@@ -174,7 +192,8 @@ class ApiHandler
         }
     }
 
-    public function getFoto(array $params): void {
+    public function getFoto(array $params): void
+    {
         try {
             $paramIdentifier = $params['identifier'] ?? null;
             $identifier = (!empty($paramIdentifier) && $paramIdentifier !== '{identifier}')
@@ -188,6 +207,7 @@ class ApiHandler
 
             if (!$foto) {
                 ResponseHelper::error('Foto niet gevonden.', 404, 'NOT_FOUND');
+
                 return;
             }
 
@@ -197,7 +217,8 @@ class ApiHandler
         }
     }
 
-    public function clearCache(array $params = []): void {
+    public function clearCache(array $params = []): void
+    {
         try {
             $deleted = $this->cache->clear_cache();
 
@@ -216,7 +237,8 @@ class ApiHandler
         }
     }
 
-    private function clearDirectory(string $directory, string $pattern = '*'): int {
+    private function clearDirectory(string $directory, string $pattern = '*'): int
+    {
         if (!is_dir($directory)) {
             throw new Exception("Directory does not exist: {$directory}");
         }
@@ -244,25 +266,33 @@ class ApiHandler
         return $deletedCount;
     }
 
-    private function validateStraat(?string $straat): bool {
+    private function validateStraat(?string $straat): bool
+    {
         if ($straat && !filter_var($straat, FILTER_VALIDATE_URL)) {
             ResponseHelper::error('Ongeldige zoekvraag.', 422, 'INVALID_QUERY');
+
             return false;
         }
+
         return true;
     }
 
-    private function validateTijdvak(?string $tijdvak): bool {
+    private function validateTijdvak(?string $tijdvak): bool
+    {
         if (!empty($tijdvak) && !$this->dataService->lijsten->valid_tijdvak($tijdvak)) {
             ResponseHelper::error('Ongeldige zoekvraag.', 422, 'INVALID_QUERY');
+
             return false;
         }
+
         return true;
     }
 
-    private function validateAndDecodeIdentifier(?string $identifier): ?string {
+    private function validateAndDecodeIdentifier(?string $identifier): ?string
+    {
         if (empty($identifier)) {
             ResponseHelper::error('Missende of ongeldige identifier.', 400, 'MISSING_IDENTIFIER');
+
             return null;
         }
 
@@ -270,19 +300,22 @@ class ApiHandler
 
         if (!filter_var($identifier, FILTER_VALIDATE_URL) || !$this->startsWithArk($identifier)) {
             ResponseHelper::error('Missende of ongeldige identifier.', 400, 'INVALID_IDENTIFIER');
+
             return null;
         }
 
         return $identifier;
     }
 
-    private function startsWithArk(string $url): bool {
+    private function startsWithArk(string $url): bool
+    {
         $prefix = "https://n2t.net/ark:/60537/";
+
         return str_starts_with($url, $prefix);
     }
 
-    private function logAndReturnError(Exception $e, string $method): void {
-        #error_log("ApiHandler::{$method} - " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+    private function logAndReturnError(Exception $e, string $method): void
+    {
         ResponseHelper::error('Er heeft zich een onverwachte fout voorgedaan in ApiHandler::{$method}.', 500, 'INTERNAL_ERROR');
     }
 }

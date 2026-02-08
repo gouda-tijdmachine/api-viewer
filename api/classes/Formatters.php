@@ -1,52 +1,59 @@
 <?php
 
-class Formatters {
+declare(strict_types=1);
 
+class Formatters
+{
     private $months = [
-        "01" => "januari", "02" => "februari", "03" => "maart", 
-        "04" => "april",   "05" => "mei",      "06" => "juni", 
-        "07" => "juli",    "08" => "augustus", "09" => "september", 
+        "01" => "januari", "02" => "februari", "03" => "maart",
+        "04" => "april",   "05" => "mei",      "06" => "juni",
+        "07" => "juli",    "08" => "augustus", "09" => "september",
         "10" => "oktober", "11" => "november", "12" => "december"
     ];
 
-    public function adrestypeFormatter($string) {
+    public function adrestypeFormatter($string)
+    {
         if (!empty($string)) {
-            $string = str_replace("https://www.goudatijdmachine.nl/def#","", $string);
+            $string = str_replace("https://www.goudatijdmachine.nl/def#", "", $string);
         }
+
         return $string;
     }
 
-    public function beroepFormatter($beroep) {
+    public function beroepFormatter($beroep)
+    {
         if (!empty($beroep)) {
             $beroep = strtolower($beroep);
-            $beroep = str_replace("https://iisg.amsterdam/resource/hsn/occupation/","", $beroep);
+            $beroep = str_replace("https://iisg.amsterdam/resource/hsn/occupation/", "", $beroep);
             #$beroep = ucfirst($beroep);
-            if ($beroep == "geen" || $beroep == "zonder") { 
-                $beroep .= " beroep"; 
+            if ($beroep == "geen" || $beroep == "zonder") {
+                $beroep .= " beroep";
             }
         }
+
         return $beroep;
     }
 
-    public function datumFormatter($dateString) {
+    public function datumFormatter($dateString)
+    {
         if ($dateString === null) {
             return null;
         }
 
         // Detect format YYYY-MM-DD
         if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $dateString, $matches)) {
-            $day   = (int)$matches[3];
+            $day = (int)$matches[3];
             $month = $matches[2];
-            $year  = $matches[1];
-        } 
+            $year = $matches[1];
+        }
         // Detect format DD-MM-YYYY
         elseif (preg_match('/^(\d{2})-(\d{2})-(\d{4})$/', $dateString, $matches)) {
-            $day   = (int)$matches[1];
+            $day = (int)$matches[1];
             $month = $matches[2];
-            $year  = $matches[3];
-        } 
-        else {
-            error_log("WARN: ongeldig datum in API-viewer::datumFormatter > ".$dateString);
+            $year = $matches[3];
+        } else {
+            error_log("WARN: ongeldig datum in API-viewer::datumFormatter > " . $dateString);
+
             return $dateString;
         }
 
@@ -55,16 +62,21 @@ class Formatters {
         return "$day $monthName $year";
     }
 
-    public function locatiepuntFormatter($pandStr) {
+    public function locatiepuntFormatter($pandStr)
+    {
         if ($pandStr === null) {
             return null;
         }
-        $pandStr = preg_replace("/Locatiepunt L[0-9]+,/","Pand", $pandStr);
+        $pandStr = preg_replace("/Locatiepunt L[0-9]+,/", "Pand", $pandStr);
+
         return $pandStr;
     }
 
-    public function recenteAdressenFormatter($adressen) {
-        if (empty($adressen)) return "";
+    public function recenteAdressenFormatter($adressen)
+    {
+        if (empty($adressen)) {
+            return "";
+        }
 
         $currentYear = (int)date("Y");
         $rawAdresses = explode('|', $adressen);
@@ -91,10 +103,12 @@ class Formatters {
             }
         }
 
-        if (empty($parsedAdresses)) return "";
+        if (empty($parsedAdresses)) {
+            return "";
+        }
 
         // 3. Sort the array based on endYear descending
-        usort($parsedAdresses, function($a, $b) {
+        usort($parsedAdresses, function ($a, $b) {
             return $b['endYear'] <=> $a['endYear'];
         });
 
@@ -113,7 +127,7 @@ class Formatters {
         }
 
         // 6. Return unique names (to handle potential duplicates) joined by ", "
-        return "Pand recent bekend als ".implode(', ', array_unique($recentAdresses));       
+        return "Pand recent bekend als " . implode(', ', array_unique($recentAdresses));
     }
 
 }

@@ -1,10 +1,13 @@
 <?php
 
-class Lijsten {
+declare(strict_types=1);
 
+class Lijsten
+{
     private array $tijdvakken = [];
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->tijdvakken = [
             "https://n2t.net/ark:/60537/b01v5s3" => [1500, 1599],
             "https://n2t.net/ark:/60537/b01v5th" => [1600, 1699],
@@ -16,11 +19,13 @@ class Lijsten {
         ];
     }
 
-    public function valid_tijdvak($tijdvakidentifier): bool {
+    public function valid_tijdvak($tijdvakidentifier): bool
+    {
         return isset($this->tijdvakken[$tijdvakidentifier]);
     }
 
-    public function get_tijdvak($tijdvakidentifier): ?array {
+    public function get_tijdvak($tijdvakidentifier): ?array
+    {
         return $this->tijdvakken[$tijdvakidentifier] ?? null;
     }
 
