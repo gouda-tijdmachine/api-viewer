@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 include 'config.php';
 
 require_once 'classes/Router.php';
@@ -13,7 +15,6 @@ header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
-	# print_r($_ENV);
     exit;
 }
 
