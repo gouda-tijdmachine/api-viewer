@@ -100,9 +100,9 @@ class SparqlService
         return $this->SPARQL('
 SELECT ?identifier ?naam (GROUP_CONCAT(DISTINCT ?altname; separator=", ") AS ?naam_alt) WHERE {
 ?identifier a gtm:Straat;
-     sdo:name ?naam ;
-     sdo:identifier ?id .
-OPTIONAL { ?identifier sdo:alternateName ?altname }
+     schema:name ?naam ;
+     schema:identifier ?id .
+OPTIONAL { ?identifier schema:alternateName ?altname }
 #FILTER(STR(?id) IN (
 #    "https://www.goudatijdmachine.nl/id/straat/wijdstraat",  
 #    "https://www.goudatijdmachine.nl/id/straat/kerksteeg",  
@@ -120,12 +120,12 @@ ORDER BY ?naam');
         return $this->SPARQL('
 SELECT ?identifier ?naam ?omschrijving (GROUP_CONCAT(DISTINCT ?altname; separator=", ") AS ?naam_alt) ?startjaar ?eindjaar WHERE {
   ?identifier a skos:Concept ;
-              sdo:name ?naam ;
+              schema:name ?naam ;
               o:item_set <https://n2t.net/ark:/60537/b01v5rp> ;
-              sdo:startDate ?startjaar ;
-              sdo:description ?omschrijving .
-  OPTIONAL { ?identifier sdo:alternateName ?altname . }
-  OPTIONAL { ?identifier sdo:endDate ?jaar_eind . }
+              schema:startDate ?startjaar ;
+              schema:description ?omschrijving .
+  OPTIONAL { ?identifier schema:alternateName ?altname . }
+  OPTIONAL { ?identifier schema:endDate ?jaar_eind . }
   BIND( COALESCE(?jaar_eind, YEAR(NOW())) AS ?eindjaar )
 }
 GROUP BY ?identifier ?naam ?omschrijving ?startjaar ?eindjaar
@@ -138,16 +138,16 @@ ORDER BY ?startjaar
         return $this->SPARQL('
 SELECT ?identifier ?geometry ?naam ?locatiepunt (GROUP_CONCAT(?adres ; separator="|") AS ?adressen) WHERE {
   ?identifier a gtm:Pand ;
-    sdo:name ?naam ;
-    sdo:startDate ?startDate ;
+    schema:name ?naam ;
+    schema:startDate ?startDate ;
     geo:hasGeometry/geo:asWKT ?geometry .	 
-  OPTIONAL { ?identifier sdo:endDate ?endDate }
+  OPTIONAL { ?identifier schema:endDate ?endDate }
   FILTER ( ?startDate <= "' . (int) $jaar . '" && (!BOUND(?endDate) || ?endDate >= "' . (int) $jaar . '") )
   OPTIONAL { 
     ?identifier geo:hasGeometry ?locatiepunt .
     ?s geo:hasGeometry ?locatiepunt ;
       a ?type ;
-      sdo:name ?adres .
+      schema:name ?adres .
     FILTER (?type IN (gtm:PlaatselijkeAanduiding, gtm:StraatNummerAanduiding, gtm:NummerAanduiding, gtm:Huisnaam))
     FILTER(ISIRI(?locatiepunt)) 
   }
@@ -161,7 +161,7 @@ SELECT ?identifier ?geometry ?naam ?locatiepunt (GROUP_CONCAT(?adres ; separator
         # TODO: wat te doen met status (bestaand/afgebroken/alle)?
 
         # TODO: tijdvakfilter opnemen in SPARQL (datering mist nog)
-        $tijdvakfilter = !empty($tijdvak) ? ' sdo:startDate ?datering ; FILTER(?datering>="' . $tijdvak[0] . '"^^xsd:gYear && ?datering<="' . $tijdvak[1] . '"^^xsd:gYear ) ' : '';
+        $tijdvakfilter = !empty($tijdvak) ? ' schema:startDate ?datering ; FILTER(?datering>="' . $tijdvak[0] . '"^^xsd:gYear && ?datering<="' . $tijdvak[1] . '"^^xsd:gYear ) ' : '';
 
         $searchfilter = "";
         $toptienfilter = "";
@@ -196,7 +196,7 @@ SELECT ?locatiepunt ?naam ?straat ?straatnaam WHERE {
   {
     ?locatiepunt a geo:Geometry ;
                  <http://omeka.org/s/vocabs/o#item_set> <https://n2t.net/ark:/60537/bsgGtno> ;
-                 sdo:mainEntityOfPage/o:label ?naam . ' . $searchfilter . '
+                 schema:mainEntityOfPage/o:label ?naam . ' . $searchfilter . '
   }
   {
     {
@@ -210,7 +210,7 @@ SELECT ?locatiepunt ?naam ?straat ?straatnaam WHERE {
     }
   }
   {
-    ?straat sdo:name ?straatnaam
+    ?straat schema:name ?straatnaam
   }
 } 
 GROUP BY ?locatiepunt  ?naam ?straat ?straatnaam	
@@ -254,13 +254,13 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering WHERE {
   {
     # volkstelling / verponding
     ?identifier a picom:PersonObservation ; 
-                sdo:name ?naam ;
-                sdo:familyName ?familyname ;
-                sdo:givenName ?givenName;
-                sdo:identifier ?vermeldingidentifier;
+                schema:name ?naam ;
+                schema:familyName ?familyname ;
+                schema:givenName ?givenName;
+                schema:identifier ?vermeldingidentifier;
                 gtm:plaatselijkeAanduiding ?plaatselijkeaanduiding . ' . $searchfilter . ' 
-    OPTIONAL { ?identifier sdo:hasOccupation/o:label ?beroep }
-    OPTIONAL { ?identifier sdo:hasOccupation ?beroep }
+    OPTIONAL { ?identifier schema:hasOccupation/o:label ?beroep }
+    OPTIONAL { ?identifier schema:hasOccupation ?beroep }
     BIND(COALESCE(
         IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1830/"), 1830, ?unbound),
         IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1840/"), 1840, ?unbound),
@@ -274,13 +274,13 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering WHERE {
     # adresboeken, locatiepunt in persoonvermelding
     {
       ?identifier a picom:PersonObservation ; 
-                  sdo:name ?naam ;
-                  sdo:datePublished ?datering ;
+                  schema:name ?naam ;
+                  schema:datePublished ?datering ;
                   geo:hasGeometry ?locatiepunt ' . $straatfilter . ' . ' . $searchfilter . ' ' . $tijdvakfilter . ' 
-      OPTIONAL { ?identifier sdo:hasOccupation/o:label ?beroep }
-      OPTIONAL { ?identifier sdo:hasOccupation ?beroep }
-      OPTIONAL { ?identifier sdo:familyName ?familyname }
-      OPTIONAL { ?identifier sdo:givenName ?givenName }
+      OPTIONAL { ?identifier schema:hasOccupation/o:label ?beroep }
+      OPTIONAL { ?identifier schema:hasOccupation ?beroep }
+      OPTIONAL { ?identifier schema:familyName ?familyname }
+      OPTIONAL { ?identifier schema:givenName ?givenName }
       FILTER(ISIRI(?locatiepunt))
     } 
   }
@@ -289,13 +289,13 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering WHERE {
     # bevolkingsregister, locatiepunt gekoppeld aan pagina br
     ?identifier a picom:PersonObservation ; 
                 prov:hadPrimarySource ?source ;
-                sdo:familyName ?familyname ;
-                sdo:givenName ?givenName;
-                sdo:name ?naam . ' . $searchfilter . ' 
+                schema:familyName ?familyname ;
+                schema:givenName ?givenName;
+                schema:name ?naam . ' . $searchfilter . ' 
     ?source geo:hasGeometry ?locatiepunt ' . $straatfilter . ' ;
-            sdo:isPartOf ?partof .
-    OPTIONAL { ?identifier sdo:hasOccupation/o:label ?beroep }
-    OPTIONAL { ?identifier sdo:hasOccupation ?beroep }    
+            schema:isPartOf ?partof .
+    OPTIONAL { ?identifier schema:hasOccupation/o:label ?beroep }
+    OPTIONAL { ?identifier schema:hasOccupation ?beroep }    
     OPTIONAL { ?partof rico:hasBeginningDate ?datering } ' . $tijdvakfilter . '
     FILTER(ISIRI(?locatiepunt))
   } 
@@ -339,24 +339,24 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering WHERE {
 SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?straatnaam ?vervaardiger ?datering ?straat ?straatnaam ?locatiepunt WHERE {
   ' . $toptienfilter . ' ' . $straatfilter . '
   {
-    ?identifier sdo:spatialCoverage/gtm:straat ?straat ;
-      sdo:name ?titel ;
-      sdo:url ?url ;
-      sdo:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering ;
-      sdo:spatialCoverage/sdo:geo/geo:hasGeometry/geo:asWKT ?WKT2 ;
-      o:media/sdo:thumbnailUrl ?thumbnail .
+    ?identifier schema:spatialCoverage/gtm:straat ?straat ;
+      schema:name ?titel ;
+      schema:url ?url ;
+      schema:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering ;
+      schema:spatialCoverage/schema:geo/geo:hasGeometry/geo:asWKT ?WKT2 ;
+      o:media/schema:thumbnailUrl ?thumbnail .
     ' . $searchfilter . $tijdvakfilter . '
-    OPTIONAL { ?identifier sdo:creator ?vervaardiger . }  
+    OPTIONAL { ?identifier schema:creator ?vervaardiger . }  
   }
   {
     ?locatiepunt a geo:Geometry ;
-                 sdo:name ?name .
+                 schema:name ?name .
     ?perceel geo:hasGeometry ?locatiepunt ;
              geo:hasGeometry/geo:asWKT ?WKT1 .
     FILTER(STRSTARTS(STR(?WKT1),"POLYGON"))
   }
   FILTER(geof:sfIntersects(?WKT1, ?WKT2))
-  ?straat sdo:name ?straatnaam
+  ?straat schema:name ?straatnaam
 }
 ORDER BY ASC(?datering) ?titel');
     }
@@ -370,7 +370,7 @@ ORDER BY ASC(?datering) ?titel');
 SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?vervaardiger ?datering ?straat ?straatnaam ?locatiepunt WHERE  {
   {
     ?locatiepunt a geo:Geometry ;
-                 sdo:name ?name .
+                 schema:name ?name .
 #    ?text ql:contains-entity ?name .
 #    ?text ql:contains-word "' . $locatiepunt . '" .
     FILTER(CONTAINS(LCASE(?naam), "' . $locatiepunt . '"))
@@ -379,23 +379,23 @@ SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?vervaardiger ?datering ?stra
     FILTER(STRSTARTS(STR(?WKT1),"POLYGON"))
   }
   {
-    ?identifier sdo:spatialCoverage/sdo:geo/geo:hasGeometry/geo:asWKT ?WKT2 .
+    ?identifier schema:spatialCoverage/schema:geo/geo:hasGeometry/geo:asWKT ?WKT2 .
     FILTER(STRSTARTS(STR(?WKT2),"POLYGON")) 
-    ?identifier sdo:name ?titel ;
-             sdo:url ?url ;
-             o:media/sdo:thumbnailUrl ?thumbnail ;
-             sdo:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering .
+    ?identifier schema:name ?titel ;
+             schema:url ?url ;
+             o:media/schema:thumbnailUrl ?thumbnail ;
+             schema:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering .
     OPTIONAL {
-      ?identifier sdo:creator ?vervaardiger .
+      ?identifier schema:creator ?vervaardiger .
     }
     OPTIONAL {
-      ?identifier sdo:spatialCoverage/sdo:geo/geo:hasGeometry/osm:area ?area 
+      ?identifier schema:spatialCoverage/schema:geo/geo:hasGeometry/osm:area ?area 
     }
   }
   FILTER(geof:sfIntersects(?WKT1, ?WKT2))
   {
-    ?identifier sdo:spatialCoverage/gtm:straat ?straat .
-    ?straat sdo:name ?straatnaam .
+    ?identifier schema:spatialCoverage/gtm:straat ?straat .
+    ?straat schema:name ?straatnaam .
   }
 } ORDER BY ?area');
     }
@@ -406,26 +406,26 @@ SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?vervaardiger ?datering ?stra
 SELECT * WHERE {
   BIND(<' . $identifier . '> as ?identifier)
   {
-    ?identifier sdo:spatialCoverage/gtm:straat ?straat ;
-        sdo:name ?titel ;
-        sdo:url ?url ;
+    ?identifier schema:spatialCoverage/gtm:straat ?straat ;
+        schema:name ?titel ;
+        schema:url ?url ;
         o:primary_media/o:source ?iiif_info_json ;
-        sdo:url ?url ;
-        sdo:spatialCoverage/sdo:geo/geo:hasGeometry/geo:asWKT ?WKT2 ;
-        o:media/sdo:thumbnailUrl ?thumbnail .
-    OPTIONAL { ?identifier sdo:creator ?vervaardiger }
+        schema:url ?url ;
+        schema:spatialCoverage/schema:geo/geo:hasGeometry/geo:asWKT ?WKT2 ;
+        o:media/schema:thumbnailUrl ?thumbnail .
+    OPTIONAL { ?identifier schema:creator ?vervaardiger }
     OPTIONAL { ?identifier gtm:informatieAuteursRechten ?informatieAuteursRechten }
-    OPTIONAL { ?identifier sdo:dateCreated/rico:expressedDate ?datering }
+    OPTIONAL { ?identifier schema:dateCreated/rico:expressedDate ?datering }
   }
   {
     ?locatiepunt a geo:Geometry ;
-                 sdo:name ?name .
+                 schema:name ?name .
     ?perceel geo:hasGeometry ?locatiepunt ;
              geo:hasGeometry/geo:asWKT ?WKT1 .
     FILTER(STRSTARTS(STR(?WKT1),"POLYGON"))
   }
   FILTER(geof:sfIntersects(?WKT1, ?WKT2))
-  ?straat sdo:name ?straatnaam 
+  ?straat schema:name ?straatnaam 
 }');
     }
 
@@ -433,10 +433,10 @@ SELECT * WHERE {
     {
         return $this->SPARQL('
 SELECT * WHERE {
-  <' . $identifier . '> sdo:spatialCoverage/sdo:geo/geo:hasGeometry/geo:asWKT ?WKT1 .
+  <' . $identifier . '> schema:spatialCoverage/schema:geo/geo:hasGeometry/geo:asWKT ?WKT1 .
   ?identifier geo:hasGeometry/geo:asWKT ?WKT2 ;
-              sdo:name ?titel ;
-              o:media/sdo:thumbnailUrl ?thumbnail ;
+              schema:name ?titel ;
+              o:media/schema:thumbnailUrl ?thumbnail ;
               o:primary_media/o:source ?iiif_info_json .
   BIND(geof:distance(?WKT1, ?WKT2) AS ?afstand)
 }
@@ -454,13 +454,13 @@ SELECT DISTINCT ?identifier ?titel ?thumbnail ?datering WHERE  {
        geo:hasGeometry/geo:asWKT ?WKT1 .
   } 
   {
-    ?identifier sdo:spatialCoverage/sdo:geo/geo:hasGeometry/geo:asWKT ?WKT2 .
-    ?identifier sdo:name ?titel ;
-             sdo:url ?url ;
-             sdo:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering ;
-             o:media/sdo:thumbnailUrl ?thumbnail .
+    ?identifier schema:spatialCoverage/schema:geo/geo:hasGeometry/geo:asWKT ?WKT2 .
+    ?identifier schema:name ?titel ;
+             schema:url ?url ;
+             schema:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering ;
+             o:media/schema:thumbnailUrl ?thumbnail .
     OPTIONAL {
-      ?identifier sdo:spatialCoverage/sdo:geo/geo:hasGeometry/<https://osm2rdf.cs.uni-freiburg.de/rdf#area> ?area 
+      ?identifier schema:spatialCoverage/schema:geo/geo:hasGeometry/<https://osm2rdf.cs.uni-freiburg.de/rdf#area> ?area 
     }
   }
   FILTER(geof:sfIntersects(?WKT1, ?WKT2)).
@@ -472,7 +472,7 @@ SELECT DISTINCT ?identifier ?titel ?thumbnail ?datering WHERE  {
         # TODO: volgens OpenAPI requirement ook datering toevoegen
         return $this->SPARQL('
 SELECT ?naam WHERE {
-  <' . $locatiepuntidentifier . '>  sdo:name ?naam
+  <' . $locatiepuntidentifier . '>  schema:name ?naam
 } ');
     }
 
@@ -481,33 +481,33 @@ SELECT ?naam WHERE {
         return $this->SPARQL('
 SELECT * WHERE {
   BIND(<' . $identifier . '> as ?pv)
-  ?pv sdo:name ?name ;
+  ?pv schema:name ?name ;
       geo:hasGeometry ?locatiepunt .
-  ?locatiepunt sdo:name ?locatiepuntnaam .
+  ?locatiepunt schema:name ?locatiepuntnaam .
   OPTIONAL { ?pv gtm:straat/o:title ?locatiepuntnaam }
-  #OPTIONAL { ?pv sdo:givenName ?givenName }
-  #OPTIONAL { ?pv sdo:familyName ?familyName }
+  #OPTIONAL { ?pv schema:givenName ?givenName }
+  #OPTIONAL { ?pv schema:familyName ?familyName }
   #OPTIONAL { ?pv pnv:patronym ?patronym }
-  OPTIONAL { ?pv sdo:hasOccupation ?hasOccupation }
+  OPTIONAL { ?pv schema:hasOccupation ?hasOccupation }
   OPTIONAL { ?pv picom:hasAge ?hasAge }
-  OPTIONAL { ?pv sdo:birthDate ?birthDate }
-  OPTIONAL { ?pv sdo:birthPlace ?bp OPTIONAL { ?bp o:label ?bpLabel } BIND(IF(isLiteral(?bp), ?bp, ?bpLabel) AS ?birthPlace) }
-  OPTIONAL { ?pv sdo:deathDate ?deathDate }
-  OPTIONAL { ?pv sdo:deathPlace ?dp  OPTIONAL { ?dp o:label ?dpLabel } BIND(IF(isLiteral(?dp), ?dp, ?dpLabel) AS ?deathPlace) }
+  OPTIONAL { ?pv schema:birthDate ?birthDate }
+  OPTIONAL { ?pv schema:birthPlace ?bp OPTIONAL { ?bp o:label ?bpLabel } BIND(IF(isLiteral(?bp), ?bp, ?bpLabel) AS ?birthPlace) }
+  OPTIONAL { ?pv schema:deathDate ?deathDate }
+  OPTIONAL { ?pv schema:deathPlace ?dp  OPTIONAL { ?dp o:label ?dpLabel } BIND(IF(isLiteral(?dp), ?dp, ?dpLabel) AS ?deathPlace) }
   #OPTIONAL { ?pv gtm:datumBegraven ?datumBegraven }
   #OPTIONAL { ?pv gtm:plaatsBegraven ?plaatsBegraven }
-  #OPTIONAL { ?pv sdo:spouse ?spouse }
-  #OPTIONAL { ?pv sdo:parent ?parent }
+  #OPTIONAL { ?pv schema:spouse ?spouse }
+  #OPTIONAL { ?pv schema:parent ?parent }
   #OPTIONAL { ?pv picom:isWidOf ?isWidOf }
-  OPTIONAL { ?pv prov:hadPrimarySource/sdo:isPartOf/rico:hasBeginningDate ?beginDate }
+  OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:hasBeginningDate ?beginDate }
   OPTIONAL { ?pv prov:hadPrimarySource/rico:hasBeginningDate ?beginDate }
-  OPTIONAL { ?pv prov:hadPrimarySource/sdo:isPartOf/rico:hasEndDate ?endDate }
+  OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:hasEndDate ?endDate }
   OPTIONAL { ?pv prov:hadPrimarySource/rico:hasEndDate ?endDate }
   #OPTIONAL { ?pv prov:hadPrimarySource ?bronIdentifier }
-  OPTIONAL { ?pv prov:hadPrimarySource ?snl . ?snl (sdo:name|o:label) ?bronNaam }
-  OPTIONAL { ?pv prov:hadPrimarySource/sdo:isPartOf/rico:identifier ?_bronInventaris . BIND(CONCAT("SAMH ", STR(?_bronInventaris)) AS ?bronInventaris) }
+  OPTIONAL { ?pv prov:hadPrimarySource ?snl . ?snl (schema:name|o:label) ?bronNaam }
+  OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:identifier ?_bronInventaris . BIND(CONCAT("SAMH ", STR(?_bronInventaris)) AS ?bronInventaris) }
   OPTIONAL { ?pv prov:hadPrimarySource/rico:identifier ?_bronInventaris . BIND(CONCAT("SAMH ", STR(?_bronInventaris)) AS ?bronInventaris) }
-  OPTIONAL { ?pv sdo:isBasedOn ?bronUrl }
+  OPTIONAL { ?pv schema:isBasedOn ?bronUrl }
   OPTIONAL { ?pv roar:documentedIn ?bronUrl }
   OPTIONAL { ?pv prov:hadPrimarySource ?bronUrl }
 }');
@@ -519,11 +519,11 @@ SELECT * WHERE {
 SELECT ?identifier ?naam ?beroep ?datering WHERE {
   ?identifier a picom:PersonObservation ;
       geo:hasGeometry <' . $locatiepuntidentifier . '> ;
-      sdo:name ?naam .
-  OPTIONAL { ?identifier sdo:hasOccupation ?beroep }
-  OPTIONAL { ?identifier sdo:datePublished ?datering }
+      schema:name ?naam .
+  OPTIONAL { ?identifier schema:hasOccupation ?beroep }
+  OPTIONAL { ?identifier schema:datePublished ?datering }
   OPTIONAL { ?identifier prov:hadPrimarySource/rico:hasBeginningDate ?datering }
-  OPTIONAL { ?identifier prov:hadPrimarySource/sdo:isPartOf/rico:hasBeginningDate ?datering }
+  OPTIONAL { ?identifier prov:hadPrimarySource/schema:isPartOf/rico:hasBeginningDate ?datering }
 } ORDER BY ASC(?datering)
 ');
     }
@@ -561,18 +561,18 @@ SELECT ?identifier ?naam ?beroep ?datering WHERE {
 SELECT ?type ?naam ?startDate (COALESCE(?_endDate, "nu") AS ?endDate) ?wijknaam ?straaturi ?locatienaam WHERE {
   ?uri geo:hasGeometry <' . $locatiepuntidentifier . '> ;
        a ?type ;
-       sdo:startDate ?_startDate ;
-       sdo:name ?naam ;
+       schema:startDate ?_startDate ;
+       schema:name ?naam ;
        gtm:straat ?straaturi .
   FILTER (?type IN (gtm:PlaatselijkeAanduiding, gtm:StraatNummerAanduiding, gtm:NummerAanduiding, gtm:Huisnaam))
   BIND(xsd:integer(SUBSTR(STR(?_startDate), 1, 4)) AS ?startDate)
-  OPTIONAL { ?uri sdo:endDate ?_endDate }
+  OPTIONAL { ?uri schema:endDate ?_endDate }
   OPTIONAL {
     ?uri hg:liesIn ?wijk .
     ?wijk a gtm:Wijk ;
-          sdo:name ?wijknaam 
+          schema:name ?wijknaam 
   }
-  <' . $locatiepuntidentifier . '> sdo:name ?locatienaam . 
+  <' . $locatiepuntidentifier . '> schema:name ?locatienaam . 
 } ORDER BY DESC(?startDate)' . ($limit > 0 ? ' LIMIT ' . $limit : ''));
     }
 }
