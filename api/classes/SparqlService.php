@@ -74,7 +74,7 @@ class SparqlService
             $trace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 2);
             $callerFunction = $trace[1]['function'];
             $callerArgs = $trace[1]['args'];
-            file_put_contents("sparql.log", "-------------\n\n" . $callerFunction . " > " . print_r($callerArgs, 1) . "\n\n" . $sparqlQueryString . "\n\n", FILE_APPEND);
+            file_put_contents("sparql.log", "-------------\n\n" . $callerFunction . " > " . print_r($callerArgs, true) . "\n\n" . $sparqlQueryString . "\n\n", FILE_APPEND);
         }
 
         $sparqlResult = $this->getSPARQLresults($sparqlQueryString);
@@ -344,7 +344,9 @@ SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?straatnaam ?vervaardiger ?da
       schema:url ?url ;
       schema:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering ;
       schema:spatialCoverage/schema:geo/geo:hasGeometry/geo:asWKT ?WKT2 ;
-      o:media/schema:thumbnailUrl ?thumbnail .
+      #o:media/schema:thumbnailUrl ?thumbnail .
+      o:media/o:source ?_thumbnail .
+      BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
     ' . $searchfilter . $tijdvakfilter . '
     OPTIONAL { ?identifier schema:creator ?vervaardiger . }  
   }
@@ -383,8 +385,11 @@ SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?vervaardiger ?datering ?stra
     FILTER(STRSTARTS(STR(?WKT2),"POLYGON")) 
     ?identifier schema:name ?titel ;
              schema:url ?url ;
-             o:media/schema:thumbnailUrl ?thumbnail ;
-             schema:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering .
+             schema:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering ;
+             #o:media/schema:thumbnailUrl ?thumbnail .
+      o:media/o:source ?_thumbnail .
+      BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
+
     OPTIONAL {
       ?identifier schema:creator ?vervaardiger .
     }
@@ -412,7 +417,9 @@ SELECT * WHERE {
         o:primary_media/o:source ?iiif_info_json ;
         schema:url ?url ;
         schema:spatialCoverage/schema:geo/geo:hasGeometry/geo:asWKT ?WKT2 ;
-        o:media/schema:thumbnailUrl ?thumbnail .
+        #o:media/schema:thumbnailUrl ?thumbnail .
+      o:media/o:source ?_thumbnail .
+      BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
     OPTIONAL { ?identifier schema:creator ?vervaardiger }
     OPTIONAL { ?identifier gtm:informatieAuteursRechten ?informatieAuteursRechten }
     OPTIONAL { ?identifier schema:dateCreated/rico:expressedDate ?datering }
@@ -436,8 +443,10 @@ SELECT * WHERE {
   <' . $identifier . '> schema:spatialCoverage/schema:geo/geo:hasGeometry/geo:asWKT ?WKT1 .
   ?identifier geo:hasGeometry/geo:asWKT ?WKT2 ;
               schema:name ?titel ;
-              o:media/schema:thumbnailUrl ?thumbnail ;
-              o:primary_media/o:source ?iiif_info_json .
+              o:primary_media/o:source ?iiif_info_json ;
+              #o:media/schema:thumbnailUrl ?thumbnail .
+      o:media/o:source ?_thumbnail .
+      BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
   BIND(geof:distance(?WKT1, ?WKT2) AS ?afstand)
 }
 ORDER BY ASC(?afstand)
@@ -458,7 +467,9 @@ SELECT DISTINCT ?identifier ?titel ?thumbnail ?datering WHERE  {
     ?identifier schema:name ?titel ;
              schema:url ?url ;
              schema:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering ;
-             o:media/schema:thumbnailUrl ?thumbnail .
+             #o:media/schema:thumbnailUrl ?thumbnail .
+      o:media/o:source ?_thumbnail .
+      BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
     OPTIONAL {
       ?identifier schema:spatialCoverage/schema:geo/geo:hasGeometry/<https://osm2rdf.cs.uni-freiburg.de/rdf#area> ?area 
     }
