@@ -16,11 +16,13 @@ class SparqlService
         if ($offset > 0) {
             $sparqlQueryString .= " OFFSET " . $offset;
         }
-        $url = SPARQL_ENDPOINT . '?query=' . urlencode($sparqlQueryString);
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_URL, SPARQL_ENDPOINT);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        // POST (not GET) so the query travels in the request body — keeps the URL
+        // short and avoids the WAF on www.goudatijdmachine.nl that 403s long query strings.
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(['query' => $sparqlQueryString]));
         curl_setopt($ch, CURLOPT_USERAGENT, SPARQL_CURL_UA);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
@@ -342,7 +344,7 @@ SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?straatnaam ?vervaardiger ?da
     ?identifier schema:spatialCoverage/gtm:straat ?straat ;
       schema:name ?titel ;
       schema:url ?url ;
-      schema:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering ;
+      schema:dateCreated ?datering ;
       schema:spatialCoverage/schema:geo/geo:hasGeometry/geo:asWKT ?WKT2 ;
       #o:media/schema:thumbnailUrl ?thumbnail .
       o:media/o:source ?_thumbnail .
@@ -385,7 +387,7 @@ SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?vervaardiger ?datering ?stra
     FILTER(STRSTARTS(STR(?WKT2),"POLYGON")) 
     ?identifier schema:name ?titel ;
              schema:url ?url ;
-             schema:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering ;
+             schema:dateCreated ?datering ;
              #o:media/schema:thumbnailUrl ?thumbnail .
       o:media/o:source ?_thumbnail .
       BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
@@ -422,7 +424,7 @@ SELECT * WHERE {
       BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
     OPTIONAL { ?identifier schema:creator ?vervaardiger }
     OPTIONAL { ?identifier gtm:informatieAuteursRechten ?informatieAuteursRechten }
-    OPTIONAL { ?identifier schema:dateCreated/rico:expressedDate ?datering }
+    OPTIONAL { ?identifier schema:dateCreated ?datering }
   }
   {
     ?locatiepunt a geo:Geometry ;
@@ -466,7 +468,7 @@ SELECT DISTINCT ?identifier ?titel ?thumbnail ?datering WHERE  {
     ?identifier schema:spatialCoverage/schema:geo/geo:hasGeometry/geo:asWKT ?WKT2 .
     ?identifier schema:name ?titel ;
              schema:url ?url ;
-             schema:dateCreated/rico:hasBeginningDate/rico:normalizedDateValue ?datering ;
+             schema:dateCreated ?datering ;
              #o:media/schema:thumbnailUrl ?thumbnail .
       o:media/o:source ?_thumbnail .
       BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
