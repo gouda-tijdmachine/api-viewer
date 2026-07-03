@@ -260,9 +260,8 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering WHERE {
                 schema:familyName ?familyname ;
                 schema:givenName ?givenName;
                 schema:identifier ?vermeldingidentifier;
-                gtm:plaatselijkeAanduiding ?plaatselijkeaanduiding . ' . $searchfilter . ' 
-    OPTIONAL { ?identifier schema:hasOccupation/o:label ?beroep }
-    OPTIONAL { ?identifier schema:hasOccupation ?beroep }
+                gtm:plaatselijkeAanduiding ?plaatselijkeaanduiding . ' . $searchfilter . '
+    OPTIONAL { ?identifier schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
     BIND(COALESCE(
         IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1830/"), 1830, ?unbound),
         IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1840/"), 1840, ?unbound),
@@ -279,8 +278,7 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering WHERE {
                   schema:name ?naam ;
                   schema:datePublished ?datering ;
                   geo:hasGeometry ?locatiepunt ' . $straatfilter . ' . ' . $searchfilter . ' ' . $tijdvakfilter . ' 
-      OPTIONAL { ?identifier schema:hasOccupation/o:label ?beroep }
-      OPTIONAL { ?identifier schema:hasOccupation ?beroep }
+      OPTIONAL { ?identifier schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
       OPTIONAL { ?identifier schema:familyName ?familyname }
       OPTIONAL { ?identifier schema:givenName ?givenName }
       FILTER(ISIRI(?locatiepunt))
@@ -296,8 +294,7 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering WHERE {
                 schema:name ?naam . ' . $searchfilter . ' 
     ?source geo:hasGeometry ?locatiepunt ' . $straatfilter . ' ;
             schema:isPartOf ?partof .
-    OPTIONAL { ?identifier schema:hasOccupation/o:label ?beroep }
-    OPTIONAL { ?identifier schema:hasOccupation ?beroep }    
+    OPTIONAL { ?identifier schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
     OPTIONAL { ?partof rico:hasBeginningDate ?datering } ' . $tijdvakfilter . '
     FILTER(ISIRI(?locatiepunt))
   } 
@@ -501,7 +498,7 @@ SELECT * WHERE {
   #OPTIONAL { ?pv schema:givenName ?givenName }
   #OPTIONAL { ?pv schema:familyName ?familyName }
   #OPTIONAL { ?pv pnv:patronym ?patronym }
-  OPTIONAL { ?pv schema:hasOccupation ?hasOccupation }
+  OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?hasOccupation ] }
   OPTIONAL { ?pv picom:hasAge ?hasAge }
   OPTIONAL { ?pv schema:birthDate ?birthDate }
   OPTIONAL { ?pv schema:birthPlace ?bp OPTIONAL { ?bp o:label ?bpLabel } BIND(IF(isLiteral(?bp), ?bp, ?bpLabel) AS ?birthPlace) }
@@ -533,7 +530,7 @@ SELECT ?identifier ?naam ?beroep ?datering WHERE {
   ?identifier a picom:PersonObservation ;
       geo:hasGeometry <' . $locatiepuntidentifier . '> ;
       schema:name ?naam .
-  OPTIONAL { ?identifier schema:hasOccupation ?beroep }
+  OPTIONAL { ?identifier schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
   OPTIONAL { ?identifier schema:datePublished ?datering }
   OPTIONAL { ?identifier prov:hadPrimarySource/rico:hasBeginningDate ?datering }
   OPTIONAL { ?identifier prov:hadPrimarySource/schema:isPartOf/rico:hasBeginningDate ?datering }
