@@ -2,11 +2,11 @@
     "openapi": "3.1.0",
     "info": {
         "title": "Gouda Tijdmachine Viewer API",
-        "description": "Deze [getestte](https://gouda-tijdmachine.github.io/api-viewer/) read-only REST API voorziet in de informatiebehoefte qua foto's, panden, straten en personen; alle geïdentifieerd met een persistente HTTP URI op basis van ARK.<br><br>**N.B.**: de beschikbare data betreft met name de 14 panden aan de Wijdstraat (oostzijde) zoals deze in [project Wijdstraat](https://www.goudatijdmachine.nl/project-wijdstraat/locaties/) zijn gekoppeld, dus **nog niet** geheel Gouda.",
+        "description": "Deze [getestte](/test-results/) read-only REST API voorziet in de informatiebehoefte qua foto's, panden, straten en personen; alle geïdentifieerd met een persistente HTTP URI op basis van ARK.<br><br>**N.B.**: de beschikbare data betreft met name de 14 panden aan de Wijdstraat (oostzijde) zoals deze in [project Wijdstraat](https://www.goudatijdmachine.nl/project-wijdstraat/locaties/) zijn gekoppeld, dus **nog niet** geheel Gouda.",
         "version": "v1.3.4",
         "contact": {
-            "name": "Gouda Tijdmachine",
-            "url": "https://www.goudatijdmachine.nl/contact/"
+            "name": "Gouda Tijdmachine Viewer",
+            "url": "https://viewer.goudatijdmachine.nl/"
             }
     },
     "servers": [
@@ -144,8 +144,8 @@
                 "tags": [
                     "Detailinformatie"
                 ],
-                "summary": "Geef detailinformatie over een foto",
-                "description": "Geeft informatie over de gespecificeerde foto, inclusief identifiers van zichtbare panden en (max. 10) foto's dichtbij de locatie van de gespecificeerde foto.",
+                "summary": "Geef detailinformatie over een foto of krantenknipsel",
+                "description": "Geeft informatie over de gespecificeerde afbeelding, inclusief identifiers van zichtbare/gerelateerde panden en (max. 10) foto's dichtbij de locatie. De identifier kan een foto zijn of een krantenknipsel (zie het veld `type`); bij een krantenknipsel zijn aanvullend de velden `krant`, `pagina` en `tekst` gevuld.",
                 "parameters": [
                     {
                         "name": "identifier",
@@ -824,23 +824,48 @@
                         "type": "string",
                         "example": "SAMH",
                         "description": "De organisatie die de afbeelding in haar collectie heeft, bijv. SAMH of RCE."
-                    },                    
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "foto",
+                            "krantenknipsel"
+                        ],
+                        "example": "foto",
+                        "description": "Het soort afbeelding: `foto` of `krantenknipsel` (een aan een pand getagd krantenartikel). De velden `krant`, `pagina` en `tekst` zijn alleen aanwezig bij `krantenknipsel`."
+                    },
+                    "krant": {
+                        "type": "string",
+                        "example": "Goudsche Courant",
+                        "description": "Alleen bij `type` = `krantenknipsel`: de naam van de krant waaruit het knipsel afkomstig is."
+                    },
+                    "pagina": {
+                        "type": "string",
+                        "example": "3",
+                        "description": "Alleen bij `type` = `krantenknipsel`: het paginanummer waarop het knipsel in de krant staat."
+                    },
+                    "tekst": {
+                        "type": "string",
+                        "example": "Openbare Verkooping ten overstaan van den Notaris G. C. FORTUIJN DROOGLEEVER te GOUDA ...",
+                        "description": "Alleen bij `type` = `krantenknipsel`: de (OCR-)tekst van het krantenknipsel."
+                    },
                     "straten": {
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/StraatIndex"
                         },
-                        "description": "De straat (of straten) waar de afbeelding is genomen."
+                        "description": "De straat (of straten) waar de afbeelding is genomen, respectievelijk waar het krantenknipsel aan getagd is."
                     },
                     "panden": {
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/PandIndex"
                         },
-                        "description": "De informatie van de panden die zichtbaar zijn op de afbeelding."
+                        "description": "De informatie van de panden die zichtbaar zijn op de afbeelding, respectievelijk waar het krantenknipsel aan getagd is."
                     },
                     "fotos_dichtbij": {
                         "type": "array",
+                        "description": "Foto's dichtbij de locatie van de afbeelding. Leeg bij een krantenknipsel.",
                         "items": {
                             "$ref": "#/components/schemas/FotosDichtbijIndex"
                         }
@@ -1083,9 +1108,42 @@
                     },
                     "fotos": {
                         "type": "array",
-                        "description": "Lijst van max. 10 foto's waarop het pand zichtbaar is (lees: de fotozichtveld-geometrie heeft een overlap met de perceelgeometrie), gesorteerd op afstand tot het pand.",
+                        "description": "Lijst van afbeeldingen bij het pand, gesorteerd op datering. Dit bevat zowel foto's waarop het pand zichtbaar is (max. 10, fotozichtveld-geometrie overlapt met de perceelgeometrie) als krantenknipsels (max. 10, via een tag gekoppeld aan een plaatselijke- of straatnummeraanduiding van dit locatiepunt). Onderscheid via het veld `type`.",
                         "items": {
-                            "$ref": "#/components/schemas/FotosDichtbijIndex"
+                            "type": "object",
+                            "properties": {
+                                "identifier": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "description": "De persistente HTTP URI van de afbeelding: een foto(beschrijving) bij `type` = `foto`, of een krantenknipsel-annotatie bij `type` = `krantenknipsel`.",
+                                    "example": "https://n2t.net/ark:/60537/b5PMTR"
+                                },
+                                "titel": {
+                                    "type": "string",
+                                    "example": "Wijdstraat, tabakswinkel Van Vreumingen, Sinterklaasetalage",
+                                    "description": "De titel van de afbeelding, veelal meer in de vorm van een lange beschrijving dan een korte titel."
+                                },
+                                "thumbnail": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "example": "https://images.memorix.nl/sahm/iiif/dba42fda-f7f7-7c09-6aff-85be6252d93a/295,1016,737,317/!400,400/0/default.jpg",
+                                    "description": "Een kleine weergave van de afbeelding. Bij een krantenknipsel is dit het reeds bijgesneden knipselfragment (IIIF, max. 400x400)."
+                                },
+                                "datering": {
+                                    "type": "string",
+                                    "example": "1886-04-14",
+                                    "description": "Het jaar of de datum waarop de afbeelding is gemaakt (foto) respectievelijk gepubliceerd (krantenknipsel)."
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "foto",
+                                        "krantenknipsel"
+                                    ],
+                                    "example": "krantenknipsel",
+                                    "description": "Het soort afbeelding: `foto` (een foto waarop het pand zichtbaar is) of `krantenknipsel` (een aan het pand getagd krantenartikel)."
+                                }
+                            }
                         }
                     }
                 }

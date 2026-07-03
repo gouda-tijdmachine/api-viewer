@@ -33,12 +33,9 @@ class SparqlService
 
         if (curl_errno($ch)) {
             error_log("SPARQL call failed: " . curl_error($ch));
-            curl_close($ch);
 
             return null;
         }
-
-        curl_close($ch);
 
         return $response;
     }
@@ -435,6 +432,40 @@ SELECT * WHERE {
 }');
     }
 
+    public function get_krantenknipsel($identifier): array
+    {
+        # Een krantenknipsel is een oa:Annotation op een schema:Newspaper-pagina,
+        # via schema:keywords getagd aan een plaatselijke-/straatnummeraanduiding.
+        return $this->SPARQL('
+SELECT * WHERE {
+  BIND(<' . $identifier . '> AS ?identifier)
+  ?identifier a oa:Annotation ;
+              schema:name ?titel ;
+              schema:datePublished ?datering ;
+              schema:isPartOf ?_krant ;
+              oa:hasSource ?_iiifbase ;
+              o:media/o:source ?image .
+  ?_krant a schema:Newspaper ;
+          schema:name ?krant .
+  # image = reeds bijgesneden knipselfragment op ware regiogrootte; thumbnail max. 400x400
+  BIND(REPLACE(?image, "/full/0/default.jpg", "/!400,400/0/default.jpg") AS ?thumbnail)
+  # info.json van de volledige krantenpagina voor een IIIF-viewer
+  BIND(CONCAT(STR(?_iiifbase), "/info.json") AS ?iiif_info_json)
+  OPTIONAL { ?identifier schema:url ?url }
+  OPTIONAL { ?identifier schema:pagination ?pagina }
+  OPTIONAL { ?identifier schema:text ?tekst }
+  OPTIONAL {
+    ?identifier schema:keywords ?aanduiding .
+    FILTER(isIRI(?aanduiding))
+    ?aanduiding a ?_atype .
+    FILTER(?_atype IN (gtm:PlaatselijkeAanduiding, gtm:StraatNummerAanduiding))
+    ?aanduiding geo:hasGeometry ?locatiepunt .
+    ?locatiepunt schema:name ?name .
+    OPTIONAL { ?aanduiding gtm:straat ?straat . ?straat schema:name ?straatnaam }
+  }
+}');
+    }
+
     public function get_fotos_dichtbij($identifier): array
     {
         return $this->SPARQL('
@@ -455,26 +486,45 @@ LIMIT 10');
     public function get_fotos_locatiepunt($locatiepuntidentifier): array
     {
         return $this->SPARQL('
-SELECT DISTINCT ?identifier ?titel ?thumbnail ?datering WHERE  {
+SELECT DISTINCT ?identifier ?titel ?thumbnail ?datering ?type WHERE {
   {
-    ?s a gtm:Perceel ;
-       geo:hasGeometry <' . $locatiepuntidentifier . '>;
-       geo:hasGeometry/geo:asWKT ?WKT1 .
-  } 
-  {
-    ?identifier schema:spatialCoverage/schema:geo/geo:hasGeometry/geo:asWKT ?WKT2 .
-    ?identifier schema:name ?titel ;
-             schema:url ?url ;
-             schema:dateCreated ?datering ;
-             #o:media/schema:thumbnailUrl ?thumbnail .
-      o:media/o:source ?_thumbnail .
-      BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
-    OPTIONAL {
-      ?identifier schema:spatialCoverage/schema:geo/geo:hasGeometry/<https://osm2rdf.cs.uni-freiburg.de/rdf#area> ?area 
-    }
+    SELECT DISTINCT ?identifier ?titel ?thumbnail ?datering ("foto" AS ?type) WHERE  {
+      {
+        ?s a gtm:Perceel ;
+           geo:hasGeometry <' . $locatiepuntidentifier . '>;
+           geo:hasGeometry/geo:asWKT ?WKT1 .
+      }
+      {
+        ?identifier schema:spatialCoverage/schema:geo/geo:hasGeometry/geo:asWKT ?WKT2 .
+        ?identifier schema:name ?titel ;
+                 schema:url ?url ;
+                 schema:dateCreated ?datering ;
+                 #o:media/schema:thumbnailUrl ?thumbnail .
+          o:media/o:source ?_thumbnail .
+          BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
+        OPTIONAL {
+          ?identifier schema:spatialCoverage/schema:geo/geo:hasGeometry/<https://osm2rdf.cs.uni-freiburg.de/rdf#area> ?area
+        }
+      }
+      FILTER(geof:sfIntersects(?WKT1, ?WKT2)).
+    } ORDER BY ?datering ?area LIMIT 10
   }
-  FILTER(geof:sfIntersects(?WKT1, ?WKT2)).
-} ORDER BY ?datering ?area LIMIT 10');
+  UNION
+  {
+    SELECT DISTINCT ?identifier ?titel ?thumbnail ?datering ("krantenknipsel" AS ?type) WHERE {
+      ?aanduiding geo:hasGeometry <' . $locatiepuntidentifier . '> ;
+                  a ?_atype .
+      FILTER(?_atype IN (gtm:PlaatselijkeAanduiding, gtm:StraatNummerAanduiding))
+      ?identifier a oa:Annotation ;
+                  schema:keywords ?aanduiding ;
+                  schema:name ?titel ;
+                  schema:isPartOf/a schema:Newspaper ;
+                  o:media/o:source ?_thumbnail ;
+                  schema:datePublished ?datering .
+      BIND(REPLACE(?_thumbnail, "/full/0/default.jpg", "/!400,400/0/default.jpg") AS ?thumbnail)
+    } ORDER BY ?datering LIMIT 10
+  }
+} ORDER BY ?datering');
     }
 
     public function get_pand($locatiepuntidentifier): array

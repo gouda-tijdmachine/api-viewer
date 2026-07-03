@@ -323,6 +323,7 @@ class DataService
                 'titel' => $foto['titel']['value'] ?? '',
                 'thumbnail' => $foto['thumbnail']['value'] ?? '',
                 'datering' => $foto['datering']['value'] ?? '',
+                'type' => $foto['type']['value'] ?? 'foto',
             ];
         }
 
@@ -372,8 +373,14 @@ class DataService
 
     public function getFoto($identifier): ?array
     {
-        $fotos_dichtbij = [];
+        $fotos = $this->sparqlService->get_foto($identifier);
 
+        # Geen foto? Dan kan het een krantenknipsel (oa:Annotation) zijn.
+        if (empty($fotos)) {
+            return $this->getKrantenknipsel($identifier);
+        }
+
+        $fotos_dichtbij = [];
         foreach ($this->sparqlService->get_fotos_dichtbij($identifier) as $foto_dichtbij) {
             $fotos_dichtbij[] = [
                 'identifier' => $foto_dichtbij['identifier']['value'] ?? '',
@@ -383,14 +390,11 @@ class DataService
             ];
         }
 
-        $fotos = $this->sparqlService->get_foto($identifier);
-        if (empty($fotos)) {
-            return null;
-        }
-
         $foto = $fotos[0];
 
-        $filtered = [
+        [$straten, $panden] = $this->extractStratenPanden($fotos);
+
+        return [
             'identifier' => $foto['identifier']['value'] ?? '',
             'titel' => $foto['titel']['value'] ?? '',
             'thumbnail' => $foto['thumbnail']['value'] ?? '',
@@ -401,27 +405,64 @@ class DataService
             'url' => $foto['url']['value'] ?? null,
             'datering' => $foto['datering']['value'] ?? null,
             'bronbronorganisatie' => (!empty($foto['url']['value']) && strstr($foto['url']['value'], 'samh.nl') !== false) ? 'Streekarchief Midden-Holland' : 'Rijkdienst voor het Cultureel Erfgoed',
-            'straten' => [],
-            'panden' => [],
+            'type' => 'foto',
+            'straten' => $straten,
+            'panden' => $panden,
             'fotos_dichtbij' => $fotos_dichtbij
         ];
+    }
 
+    private function getKrantenknipsel($identifier): ?array
+    {
+        $knipsels = $this->sparqlService->get_krantenknipsel($identifier);
+        if (empty($knipsels)) {
+            return null;
+        }
+
+        $knipsel = $knipsels[0];
+
+        [$straten, $panden] = $this->extractStratenPanden($knipsels);
+
+        return [
+            'identifier' => $knipsel['identifier']['value'] ?? '',
+            'titel' => $knipsel['titel']['value'] ?? '',
+            'thumbnail' => $knipsel['thumbnail']['value'] ?? '',
+            'image' => $knipsel['image']['value'] ?? '',
+            'iiif_info_json' => $knipsel['iiif_info_json']['value'] ?? '',
+            'vervaardiger' => null,
+            'informatie_auteursrechten' => null,
+            'url' => $knipsel['url']['value'] ?? null,
+            'datering' => $knipsel['datering']['value'] ?? null,
+            'bronbronorganisatie' => (!empty($knipsel['url']['value']) && strstr($knipsel['url']['value'], 'samh.nl') !== false) ? 'Streekarchief Midden-Holland' : 'Rijkdienst voor het Cultureel Erfgoed',
+            'type' => 'krantenknipsel',
+            'krant' => $knipsel['krant']['value'] ?? null,
+            'pagina' => $knipsel['pagina']['value'] ?? null,
+            'tekst' => $knipsel['tekst']['value'] ?? null,
+            'straten' => $straten,
+            'panden' => $panden,
+            'fotos_dichtbij' => []
+        ];
+    }
+
+    # Bouw de unieke straten- en pandenlijst op uit de SPARQL-rijen (foto of knipsel).
+    private function extractStratenPanden(array $rows): array
+    {
         $straatMap = [];
         $pandMap = [];
 
-        foreach ($fotos as $foto) {
-            if (!empty($foto['straat']['value']) && !empty($foto['straatnaam']['value'])) {
-                if (!isset($straatMap[$foto['straat']['value']])) {
-                    $straatMap[$foto['straat']['value']] = [
-                        'identifier' => $foto['straat']['value'],
-                        'naam' => $foto['straatnaam']['value']
+        foreach ($rows as $row) {
+            if (!empty($row['straat']['value']) && !empty($row['straatnaam']['value'])) {
+                if (!isset($straatMap[$row['straat']['value']])) {
+                    $straatMap[$row['straat']['value']] = [
+                        'identifier' => $row['straat']['value'],
+                        'naam' => $row['straatnaam']['value']
                     ];
                 }
             }
 
-            if (!empty($foto['locatiepunt']['value']) && !isset($pandMap[$foto['locatiepunt']['value']])) {
+            if (!empty($row['locatiepunt']['value']) && !isset($pandMap[$row['locatiepunt']['value']])) {
                 $pandnaam = 'Pand';
-                $arrAdressen = $this->sparqlService->get_adressen_locatiepunt($foto['locatiepunt']['value'], 1);
+                $arrAdressen = $this->sparqlService->get_adressen_locatiepunt($row['locatiepunt']['value'], 1);
 
                 if (!empty($arrAdressen)) {
                     $locatienaam = $arrAdressen[0]["locatienaam"]["value"] ?? '';
@@ -434,17 +475,14 @@ class DataService
                     }
                 }
 
-                $pandMap[$foto['locatiepunt']['value']] = [
-                    'identifier' => $foto['locatiepunt']['value'],
+                $pandMap[$row['locatiepunt']['value']] = [
+                    'identifier' => $row['locatiepunt']['value'],
                     'naam' => $pandnaam,
                     'straten' => []   # TODO nog niet geïmplementeerd, echt nodig?
                 ];
             }
         }
 
-        $filtered['straten'] = array_values($straatMap);
-        $filtered['panden'] = array_values($pandMap);
-
-        return $filtered;
+        return [array_values($straatMap), array_values($pandMap)];
     }
 }

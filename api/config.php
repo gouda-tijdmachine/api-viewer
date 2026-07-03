@@ -14,6 +14,7 @@ PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
 PREFIX gtm: <https://www.goudatijdmachine.nl/def#>
 PREFIX hg: <http://rdf.histograph.io/>
 PREFIX o: <http://omeka.org/s/vocabs/o#>
+PREFIX oa: <http://www.w3.org/ns/oa#>
 PREFIX osm: <https://osm2rdf.cs.uni-freiburg.de/rdf#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX picom: <https://personsincontext.org/model#>
