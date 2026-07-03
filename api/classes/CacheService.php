@@ -5,7 +5,6 @@ declare(strict_types=1);
 class CacheService
 {
     private $redis = null;
-    private $local = true;
 
     public function __construct()
     {
@@ -15,46 +14,10 @@ class CacheService
 
         $this->redis = new Redis();
 
-        $redisUrl = getenv('REDIS_URL');
-        $host = '127.0.0.1';
-        $port = 6379;
-        $user = null;
-        $pass = null;
-        $useTls = false;
-
-        if (!empty($redisUrl)) {
-            $this->local = false;
-
-            $parsed = parse_url($redisUrl);
-            $host = $parsed['host'] ?? $host;
-            $port = (int)($parsed['port'] ?? $port);
-            $user = $parsed['user'] ?? null;
-            $pass = $parsed['pass'] ?? null;
-
-            $scheme = strtolower($parsed['scheme'] ?? '');
-            $useTls = ($scheme === 'rediss' || $scheme === 'tls');
-        }
-
         try {
-            $connectHost = $useTls ? ("tls://" . $host) : $host;
-
-            $timeout = 2.5;
-            $readTimeout = 2.5;
-
-            $this->redis->connect($connectHost, $port, $timeout);
-
-            if ($readTimeout !== null) {
-                $this->redis->setOption(Redis::OPT_READ_TIMEOUT, $readTimeout);
-            }
-
-            if (!empty($pass)) {
-                if (!empty($user)) {
-                    $this->redis->auth([$user, $pass]);
-                } else {
-                    $this->redis->auth($pass);
-                }
-            }
-
+            $this->redis->connect('127.0.0.1', 6379, 2.5);
+            $this->redis->setOption(Redis::OPT_READ_TIMEOUT, 2.5);
+            $this->redis->select(CACHE_REDIS_DATABASE);
         } catch (Throwable $e) {
             echo "Connection failed: " . $e->getMessage();
         }
