@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+BASE_URL=https://api-viewer.goudatijdmachine.nl
+
 # API Testing Script for Gouda Tijdmachine Viewer API
 # Tests all endpoints defined in the OpenAPI specification (except for clear cache)
 
@@ -19,8 +21,8 @@ echo '<!DOCTYPE html>
     <style>
     html { box-sizing: border-box; }
     *, *:before, *:after { box-sizing: inherit; }
-    body { margin:0; background: #fafafa; font-family: sans-serif; padding:10px}
-    h1 { background: url("https://api-viewer.goudatijdmachine.nl/assets/gtm-logo-2025.svg") no-repeat right center; background-size: 100px auto; line-height: 100px }
+    body { margin:0 6vw; background: #fafafa; font-family: sans-serif; padding:10px}
+    h1 { background: url("https://api-viewer.goudatijdmachine.nl/assets/gtm-logo-2025.svg") no-repeat right center; background-size: 100px auto; line-height: 100px; font-size:36px}
     h2 { color: #3795ad;margin:2em 0 1em 0}
     a, a:visited { color: #3795ad; text-decoration: none}
     h3 { padding-top:1em }
@@ -196,6 +198,7 @@ fi
 print_test_header "Lijsten - GET /pandgeometrieen/{jaar}"
 test_json_endpoint "GET" "$BASE_URL/pandgeometrieen/1700" 200 "Geef een lijst met pand polygonen voor 1700"
 test_json_endpoint "GET" "$BASE_URL/pandgeometrieen/test" 400 "Geef een lijst met pand polygonen ongeldig jaartal"
+test_json_endpoint "GET" "$BASE_URL/pandgeometrieen/0" 400 "Geef een lijst met pand polygonen jaartal 0"
 
 # GET /straten 
 print_test_header "Lijsten - GET /straten"
@@ -218,6 +221,7 @@ test_json_endpoint "GET" "$BASE_URL/fotos?straat=https%3A%2F%2Fn2t.net%2Fark%3A%
 test_json_endpoint "GET" "$BASE_URL/fotos?straat=ongeldig" 422 "Lijst met zoekresultaten met foto's met ongeldige straat"
 test_json_endpoint "GET" "$BASE_URL/fotos?tijdvak=https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2Fb01v5wb" 200 "Lijst met zoekresultaten met foto's met geldige tijdvak"
 test_json_endpoint "GET" "$BASE_URL/fotos?tijdvak=ongeldig" 422 "Lijst met zoekresultaten met foto's met ongeldige tijdvak"
+test_json_endpoint "GET" "$BASE_URL/fotos?q=ZeerOnwaarschijnlijkeZoekterm123XYZ" 404 "Lijst met zoekresultaten met foto's voor zoekterm zonder resultaten"
 
 # GET /panden 
 print_test_header "Zoekresultaten - GET /panden "
@@ -227,32 +231,48 @@ test_json_endpoint "GET" "$BASE_URL/panden?straat=https%3A%2F%2Fn2t.net%2Fark%3A
 #test_json_endpoint "GET" "$BASE_URL/panden?status=afgebroken" 200 "Search buildings by status 'afgebroken'"
 test_json_endpoint "GET" "$BASE_URL/panden?straat=https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2FbjMurf&limit=5&offset=5" 200 "Lijst met zoekresultaten met panden voor straat met paginering"
 test_json_endpoint "GET" "$BASE_URL/panden?status=invalid" 422 "Search buildings with invalid status (should return 422)"
+test_json_endpoint "GET" "$BASE_URL/panden?status=bestaand" 200 "Lijst met zoekresultaten met panden met status=bestaand"
+test_json_endpoint "GET" "$BASE_URL/panden?status=afgebroken" 200 "Lijst met zoekresultaten met panden met status=afgebroken"
+test_json_endpoint "GET" "$BASE_URL/panden?tijdvak=https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2Fb01v5wb" 200 "Lijst met zoekresultaten met panden met geldig tijdvak"
+test_json_endpoint "GET" "$BASE_URL/panden?tijdvak=ongeldig" 422 "Lijst met zoekresultaten met panden met ongeldig tijdvak"
+test_json_endpoint "GET" "$BASE_URL/panden?straat=ongeldig" 422 "Lijst met zoekresultaten met panden met ongeldige straat"
 
 # GET /personen - Search people
 print_test_header "Zoekresultaten - GET /personen"
 test_json_endpoint "GET" "$BASE_URL/personen" 200 "Lijst met zoekresultaten met personen (geen parameters, dus 10 interessante personen)"
 test_json_endpoint "GET" "$BASE_URL/personen?q=Maria" 200 "Lijst met zoekresultaten met personen met zoekterm"
 test_json_endpoint "GET" "$BASE_URL/personen?limit=5&offset=5" 200 "Lijst met zoekresultaten met personen met zoekterm en paginering"
+test_json_endpoint "GET" "$BASE_URL/personen?straat=https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2FbjMurf" 200 "Lijst met zoekresultaten met personen met geldige straat"
+test_json_endpoint "GET" "$BASE_URL/personen?straat=ongeldig" 422 "Lijst met zoekresultaten met personen met ongeldige straat"
+test_json_endpoint "GET" "$BASE_URL/personen?tijdvak=https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2Fb01v5wb" 200 "Lijst met zoekresultaten met personen met geldig tijdvak"
+test_json_endpoint "GET" "$BASE_URL/personen?tijdvak=ongeldig" 422 "Lijst met zoekresultaten met personen met ongeldig tijdvak"
+test_json_endpoint "GET" "$BASE_URL/personen?q=ZeerOnwaarschijnlijkeZoekterm123XYZ" 404 "Lijst met zoekresultaten met personen voor zoekterm zonder resultaten"
 
 # ** Detailinformatie
 
-# GET /foto/{identifier} 
+# GET /foto/{identifier}
 print_test_header "Detailinformatie - GET /foto/{identifier} "
 test_json_endpoint "GET" "$BASE_URL/foto/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2Fb5PMTR" 200 "Geef detailinformatie over foto"
 test_json_endpoint "GET" "$BASE_URL/foto/invalid-identifier" 400 "Geef detailinformatie over foto met ongeldige identifier"
 test_json_endpoint "GET" "$BASE_URL/foto/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2FbrRgQU6" 404 "Geef detailinformatie over foto met niet bestaande identifier"
+test_json_endpoint "GET" "$BASE_URL/foto" 400 "Geef detailinformatie over foto zonder identifier"
+test_json_endpoint "GET" "$BASE_URL/foto/https%3A%2F%2Fexample.com%2Fb5PMTR" 400 "Geef detailinformatie over foto met geldige URL maar geen ARK identifier"
 
-# GET /pand/{identifier} 
+# GET /pand/{identifier}
 print_test_header "Detailinformatie - GET /pand/{identifier}"
 test_json_endpoint "GET" "$BASE_URL/pand/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2FbVQ1Wc3" 200 "Geef detailinformatie over pand"
 test_json_endpoint "GET" "$BASE_URL/pand/invalid-identifier" 400 "Geef detailinformatie over pand met ongeldige identifier"
 test_json_endpoint "GET" "$BASE_URL/pand/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2Fnotfound" 404 "Geef detailinformatie over pand met niet bestaande identifier"
+test_json_endpoint "GET" "$BASE_URL/pand" 400 "Geef detailinformatie over pand zonder identifier"
+test_json_endpoint "GET" "$BASE_URL/pand/https%3A%2F%2Fexample.com%2FbVQ1Wc3" 400 "Geef detailinformatie over pand met geldige URL maar geen ARK identifier"
 
-# GET /persoon/{identifier} 
+# GET /persoon/{identifier}
 print_test_header "Detailinformatie - GET /persoon/{identifier} "
 test_json_endpoint "GET" "$BASE_URL/persoon/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2Fb8KpBLy" 200 "Geef detailinformatie over persoon"
 test_json_endpoint "GET" "$BASE_URL/persoon/invalid-identifier" 400 "Geef detailinformatie over persoon met ongeldige identifier"
 test_json_endpoint "GET" "$BASE_URL/persoon/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2Fnotfound" 404 "Geef detailinformatie over persoon met niet bestaande identifier"
+test_json_endpoint "GET" "$BASE_URL/persoon" 400 "Geef detailinformatie over persoon zonder identifier"
+test_json_endpoint "GET" "$BASE_URL/persoon/https%3A%2F%2Fexample.com%2Fb8KpBLy" 400 "Geef detailinformatie over persoon met geldige URL maar geen ARK identifier"
 
 # ** HTTP check
 
@@ -264,6 +284,10 @@ test_endpoint "GET" "$BASE_URL/undefined-route" 200 "Ongedefineerde route moet l
 print_test_header "HTTP check - CORS"
 test_endpoint "OPTIONS" "$BASE_URL/straten" 204 "OPTIONS request"
 
+# Method not allowed (Router accepteert alleen GET/POST/OPTIONS)
+print_test_header "HTTP check - Method Not Allowed"
+test_endpoint "DELETE" "$BASE_URL/straten" 405 "DELETE request moet 405 Method Not Allowed geven"
+
 # Test SAMH links
 print_test_header "HTTP check - Test SAMH links"
 test_json_endpoint "GET" "https://images.memorix.nl/sahm/iiif/c8a7c04c-a2b4-99cf-3999-18d6b6478563/info.json" 200 "IIIF Image API"
@@ -274,6 +298,11 @@ test_endpoint "GET" "https://samh.nl/bronnen/genealogie/deeds/a634024a-cac3-98ba
 print_test_header "HTTP check - Test Omeka thumbnails"
 test_endpoint "GET" "https://www.goudatijdmachine.nl/omeka/files/medium/05a057c0734aeb68e67b609a35473ec977521a1f.jpg" 200 "Omeka thumbnail 1 die bestaat" "no"
 test_endpoint "GET" "https://www.goudatijdmachine.nl/omeka/files/medium/f166c8fbec016f567150983214a2c46e99177c1e.jpg" 404 "Omeka thumbnail 2 die niet bestaat" "no"
+
+# POST /clear_cache (formele test - de warmup-call helemaal aan het begin telt niet mee in de resultaten)
+print_test_header "Beheer - POST /clear_cache"
+test_json_endpoint "POST" "$BASE_URL/clear_cache" 200 "Wis de cache via POST /clear_cache"
+test_endpoint "GET" "$BASE_URL/clear_cache" 200 "GET /clear_cache valt op ongedefineerde route en levert documentatie"
 
 # Summary
 echo -e "\n${CYAN}===== Test Summary =====${NC}"
