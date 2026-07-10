@@ -438,6 +438,7 @@ class DataService
             'krant' => $knipsel['krant']['value'] ?? null,
             'pagina' => $knipsel['pagina']['value'] ?? null,
             'tekst' => $knipsel['tekst']['value'] ?? null,
+            'region' => $knipsel['xywh']['value'] ?? null,
             'straten' => $straten,
             'panden' => $panden,
             'fotos_dichtbij' => []

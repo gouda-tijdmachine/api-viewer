@@ -451,6 +451,8 @@ SELECT * WHERE {
   BIND(REPLACE(?image, "/full/0/default.jpg", "/!400,400/0/default.jpg") AS ?thumbnail)
   # info.json van de volledige krantenpagina voor een IIIF-viewer
   BIND(CONCAT(STR(?_iiifbase), "/info.json") AS ?iiif_info_json)
+  # bounding box van het knipsel binnen de pagina (W3C media fragment: xywh=pixel:x,y,w,h)
+  OPTIONAL { ?identifier oa:hasSelector ?xywh }
   OPTIONAL { ?identifier schema:url ?url }
   OPTIONAL { ?identifier schema:pagination ?pagina }
   OPTIONAL { ?identifier schema:text ?tekst }

@@ -145,7 +145,7 @@
                     "Detailinformatie"
                 ],
                 "summary": "Geef detailinformatie over een foto of krantenknipsel",
-                "description": "Geeft informatie over de gespecificeerde afbeelding, inclusief identifiers van zichtbare/gerelateerde panden en (max. 10) foto's dichtbij de locatie. De identifier kan een foto zijn of een krantenknipsel (zie het veld `type`); bij een krantenknipsel zijn aanvullend de velden `krant`, `pagina` en `tekst` gevuld.",
+                "description": "Geeft informatie over de gespecificeerde afbeelding, inclusief identifiers van zichtbare/gerelateerde panden en (max. 10) foto's dichtbij de locatie. De identifier kan een foto zijn of een krantenknipsel (zie het veld `type`); bij een krantenknipsel zijn aanvullend de velden `krant`, `pagina`, `tekst` en `region` (de bounding box binnen de krantenpagina) gevuld.",
                 "parameters": [
                     {
                         "name": "identifier",
@@ -848,6 +848,11 @@
                         "type": "string",
                         "example": "Openbare Verkooping ten overstaan van den Notaris G. C. FORTUIJN DROOGLEEVER te GOUDA ...",
                         "description": "Alleen bij `type` = `krantenknipsel`: de (OCR-)tekst van het krantenknipsel."
+                    },
+                    "region": {
+                        "type": "string",
+                        "example": "xywh=pixel:429.49,753.76,661.54,897.63",
+                        "description": "Alleen bij `type` = `krantenknipsel`: de bounding box van het knipsel binnen de volledige krantenpagina, als [W3C Media Fragment](https://www.w3.org/TR/media-frags/) (`xywh` in pixels van de `iiif_info_json`-afbeelding). Hiermee kan een IIIF-viewer op het knipsel inzoomen. Ontbreekt bij `type` = `foto`."
                     },
                     "straten": {
                         "type": "array",
