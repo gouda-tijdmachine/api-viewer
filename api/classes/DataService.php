@@ -327,8 +327,25 @@ class DataService
             if (!isset($perPand[$locatiepunt])) {
                 $perPand[$locatiepunt] = ['bronnen' => [], 'begin' => null, 'eind' => null];
             }
-            $bronKey = ($bron['naam'] ?? '') . '|' . ($bron['url'] ?? '') . '|' . $bron['datering'];
-            $perPand[$locatiepunt]['bronnen'][$bronKey] = $bron;
+
+            # één bronregel per onderliggende vermelding: de SPARQL-rijen
+            # bevatten per vermelding een cartesisch product van bronnaam-
+            # varianten (o:label én schema:name) en bron-URL's (scan-ARK én
+            # akte-URL) — kies deterministisch de beschrijvendste naam en
+            # bij voorkeur de akte-URL
+            $bronKey = $persoon['pv']['value'] ?? (($bron['naam'] ?? '') . '|' . ($bron['url'] ?? ''));
+            $bestaand = $perPand[$locatiepunt]['bronnen'][$bronKey] ?? null;
+            if ($bestaand === null) {
+                $perPand[$locatiepunt]['bronnen'][$bronKey] = $bron;
+            } else {
+                if (strlen((string) $bron['naam']) > strlen((string) $bestaand['naam'])) {
+                    $perPand[$locatiepunt]['bronnen'][$bronKey]['naam'] = $bron['naam'];
+                }
+                if (!str_contains((string) $bestaand['url'], '/genealogie/deeds/')
+                        && str_contains((string) $bron['url'], '/genealogie/deeds/')) {
+                    $perPand[$locatiepunt]['bronnen'][$bronKey]['url'] = $bron['url'];
+                }
+            }
 
             $begin = $persoon['beginDate']['value'] ?? null;
             $eind = $persoon['endDate']['value'] ?? $begin;
@@ -340,7 +357,13 @@ class DataService
 
         $panden = [];
         foreach ($perPand as $locatiepunt => $info) {
-            $bronnen = array_values($info['bronnen']);
+            # tweede dedup: verschillende vermeldingen kunnen dezelfde bron
+            # opleveren (zelfde akte/register) — identieke regels samenvoegen
+            $uniek = [];
+            foreach ($info['bronnen'] as $bron) {
+                $uniek[($bron['naam'] ?? '') . '|' . ($bron['url'] ?? '') . '|' . $bron['datering']] = $bron;
+            }
+            $bronnen = array_values($uniek);
             usort($bronnen, fn ($a, $b) => strcmp($a['datering'], $b['datering']));
 
             // adres = "pandnaam", over de volledige vermeldingsperiode
