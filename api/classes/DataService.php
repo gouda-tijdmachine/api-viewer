@@ -476,6 +476,21 @@ class DataService
         }
         $personen = array_values($personen);
 
+        # sorteer op het vroegste vermeldingsjaar (de SPARQL-orde is over de
+        # UNION-takken heen onbetrouwbaar door gemengde datering-datatypes);
+        # personen zonder datering achteraan, gelijke jaren op naam
+        $vroegsteJaar = function (?string $datering): int {
+            $jaren = array_filter(array_map(
+                fn ($deel) => (int) substr(trim($deel), 0, 4),
+                explode(',', (string) $datering)
+            ));
+
+            return $jaren ? min($jaren) : PHP_INT_MAX;
+        };
+        usort($personen, fn ($a, $b) =>
+            [$vroegsteJaar($a['datering']), $a['naam']]
+            <=> [$vroegsteJaar($b['datering']), $b['naam']]);
+
         $adressen = [];
         $sadressen = $this->sparqlService->get_adressen_locatiepunt($locatiepuntidentifier);
 
