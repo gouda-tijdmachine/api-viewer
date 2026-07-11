@@ -195,7 +195,7 @@
                     "Detailinformatie"
                 ],
                 "summary": "Geef detailinformatie over een pand",
-                "description": "Geeft informatie over het gespecificeerde pand (lees: locatiepunt), inclusief gerelateerde adressen, personen en (max. 10) foto's. De personen (persoonsreconstructies) komen uit alle gekoppelde bronnen: adresboeken, bevolkingsregister, volkstellingen 1830/1840 en het verpondingsregister.",
+                "description": "Geeft informatie over het gespecificeerde pand (lees: locatiepunt), inclusief gerelateerde adressen, personen en (max. 10) foto's. De personen (persoonsreconstructies) komen uit alle gekoppelde bronnen: adresboeken, bevolkingsregister, volkstellingen 1830/1840, het verpondingsregister en de Oorspronkelijke Aanwijzende Tafel (kadaster 1832).",
                 "parameters": [
                     {
                         "name": "identifier",

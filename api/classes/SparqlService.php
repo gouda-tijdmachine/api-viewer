@@ -315,6 +315,17 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?geboortedatum ?overlijd
     OPTIONAL { ?pv schema:dateCreated ?datering } ' . $tijdvakfilter . '
     FILTER(ISIRI(?locatiepunt))
   }
+  UNION
+  {
+    # kadaster/OAT, locatiepunt gekoppeld aan het perceel; registratiejaar
+    # (1832) staat als schema:dateCreated op de vermelding
+    ?pv a picom:PersonObservation ;
+        gtm:kadastraleAanduiding ?perceel .
+    ?perceel geo:hasGeometry ?locatiepunt ' . $straatfilter . ' .
+    OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
+    OPTIONAL { ?pv schema:dateCreated ?datering } ' . $tijdvakfilter . '
+    FILTER(ISIRI(?locatiepunt))
+  }
   # vermelding -> persoonsreconstructie
   ?identifier a picom:PersonReconstruction ;
               prov:wasDerivedFrom ?pv ;
@@ -685,6 +696,7 @@ SELECT * WHERE {
     UNION { ?pv gtm:plaatselijkeAanduiding/geo:hasGeometry ?locatiepunt }
     UNION { ?pv prov:hadPrimarySource/geo:hasGeometry ?locatiepunt }
     UNION { ?pv gtm:verponding/geo:hasGeometry ?locatiepunt }
+    UNION { ?pv gtm:kadastraleAanduiding/geo:hasGeometry ?locatiepunt }
     FILTER(ISIRI(?locatiepunt))
   }
   OPTIONAL { ?pv picom:hasAge ?hasAge }
@@ -696,6 +708,8 @@ SELECT * WHERE {
   OPTIONAL { ?pv schema:dateCreated ?endDate }
   # verponding: het verponding-item is de bron (geen hadPrimarySource)
   OPTIONAL { ?pv gtm:verponding ?_vt . ?_vt schema:name ?bronNaam . BIND(STR(?_vt) AS ?bronUrl) }
+  # OAT: de paginascan van de Oorspronkelijke Aanwijzende Tafel is de bron
+  OPTIONAL { ?pv gtm:oorspronkelijkAanwijzendeTafelPagina ?_oatp . ?_oatp (schema:name|o:label) ?bronNaam . BIND(STR(?_oatp) AS ?bronUrl) }
   OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:hasBeginningDate ?beginDate }
   OPTIONAL { ?pv prov:hadPrimarySource/rico:hasBeginningDate ?beginDate }
   OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:hasEndDate ?endDate }
@@ -795,6 +809,15 @@ SELECT DISTINCT ?identifier ?naam ?beroep ?datering WHERE {
     ?pv a picom:PersonObservation ;
         gtm:verponding ?vt .
     ?vt geo:hasGeometry <' . $locatiepuntidentifier . '> .
+    OPTIONAL { ?pv schema:dateCreated ?datering }
+  }
+  UNION
+  {
+    # kadaster/OAT: locatiepunt op het perceel (registratiejaar 1832
+    # staat als schema:dateCreated op de vermelding)
+    ?pv a picom:PersonObservation ;
+        gtm:kadastraleAanduiding ?perceel .
+    ?perceel geo:hasGeometry <' . $locatiepuntidentifier . '> .
     OPTIONAL { ?pv schema:dateCreated ?datering }
   }
   ?identifier a picom:PersonReconstruction ;
