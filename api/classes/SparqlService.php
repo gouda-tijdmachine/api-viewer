@@ -303,6 +303,17 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?geboortedatum ?overlijd
     OPTIONAL { ?partof rico:hasBeginningDate ?datering } ' . $tijdvakfilter . '
     FILTER(ISIRI(?locatiepunt))
   }
+  UNION
+  {
+    # verponding, locatiepunt gekoppeld aan het verponding-item
+    ?pv a picom:PersonObservation ;
+        gtm:verponding ?vt ;
+        schema:identifier ?vermeldingidentifier .
+    ?vt geo:hasGeometry ?locatiepunt ' . $straatfilter . ' .
+    OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
+    BIND(IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/verponding/1785/"), 1785, ?unbound) AS ?datering) ' . $tijdvakfilter . '
+    FILTER(ISIRI(?locatiepunt))
+  }
   # vermelding -> persoonsreconstructie
   ?identifier a picom:PersonReconstruction ;
               prov:wasDerivedFrom ?pv ;
@@ -666,11 +677,13 @@ SELECT * WHERE {
   OPTIONAL { ?identifier schema:deathPlace ?dp . OPTIONAL { ?dp (schema:name|o:label) ?dpLabel } BIND(COALESCE(?dpLabel, STR(?dp)) AS ?deathPlace) }
   OPTIONAL { ?identifier schema:hasOccupation ?hasOccupation }
   # pand(en) via de vermelding: direct (adresboek), via de plaatselijke
-  # aanduiding (volkstelling/verponding) of via de bronscan (bevolkingsregister)
+  # aanduiding (volkstelling), via de bronscan (bevolkingsregister) of via
+  # het verponding-item (verponding)
   OPTIONAL {
     { ?pv geo:hasGeometry ?locatiepunt }
     UNION { ?pv gtm:plaatselijkeAanduiding/geo:hasGeometry ?locatiepunt }
     UNION { ?pv prov:hadPrimarySource/geo:hasGeometry ?locatiepunt }
+    UNION { ?pv gtm:verponding/geo:hasGeometry ?locatiepunt }
     FILTER(ISIRI(?locatiepunt))
   }
   OPTIONAL { ?pv picom:hasAge ?hasAge }
@@ -731,24 +744,57 @@ SELECT * WHERE {
 
     public function get_personen_locatiepunt($locatiepuntidentifier): array
     {
-        # Retourneert persoonsRECONSTRUCTIES (sinds 2026-07-11): zelfde
-        # vermelding-selectie als voorheen (direct geo:hasGeometry), maar met
-        # de reconstructie als identifier/naam. Eén rij per (reconstructie,
-        # datering); DataService groepeert per reconstructie en voegt de
-        # dateringen samen ("1897, 1898, 1900"). NB: niet met GROUP_CONCAT in
-        # SPARQL — QLever laat aggregaten leeglopen zodra de groep een
-        # ongebonden OPTIONAL-waarde bevat.
+        # Retourneert persoonsRECONSTRUCTIES (sinds 2026-07-11) via álle vier
+        # de koppelpaden vermelding->locatiepunt: direct (adresboeken), via de
+        # bronscan (bevolkingsregister), via de plaatselijke aanduiding
+        # (volkstellingen) en via het verponding-item (verponding). Eén rij
+        # per (reconstructie, datering); DataService groepeert per
+        # reconstructie en voegt de dateringen samen ("1897, 1898, 1900").
+        # NB: niet met GROUP_CONCAT in SPARQL — QLever laat aggregaten
+        # leeglopen zodra de groep een ongebonden OPTIONAL-waarde bevat.
         return $this->SPARQL('
 SELECT DISTINCT ?identifier ?naam ?beroep ?datering WHERE {
-  ?pv a picom:PersonObservation ;
-      geo:hasGeometry <' . $locatiepuntidentifier . '> .
+  {
+    # adresboeken: locatiepunt direct op de vermelding
+    ?pv a picom:PersonObservation ;
+        geo:hasGeometry <' . $locatiepuntidentifier . '> .
+    OPTIONAL { ?pv schema:datePublished ?datering }
+  }
+  UNION
+  {
+    # bevolkingsregister: locatiepunt op de bronscan
+    ?pv a picom:PersonObservation ;
+        prov:hadPrimarySource ?src .
+    ?src geo:hasGeometry <' . $locatiepuntidentifier . '> .
+    OPTIONAL { ?src rico:hasBeginningDate ?datering }
+    OPTIONAL { ?src schema:isPartOf/rico:hasBeginningDate ?datering }
+  }
+  UNION
+  {
+    # volkstellingen/verponding: locatiepunt op de plaatselijke aanduiding
+    ?pv a picom:PersonObservation ;
+        gtm:plaatselijkeAanduiding ?pa ;
+        schema:identifier ?vermeldingidentifier .
+    ?pa geo:hasGeometry <' . $locatiepuntidentifier . '> .
+    BIND(COALESCE(
+        IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1830/"), 1830, ?unbound),
+        IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1840/"), 1840, ?unbound),
+        IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/verponding/1785/"), 1785, ?unbound)
+      ) AS ?datering)
+  }
+  UNION
+  {
+    # verponding: locatiepunt op het verponding-item
+    ?pv a picom:PersonObservation ;
+        gtm:verponding ?vt ;
+        schema:identifier ?vermeldingidentifier .
+    ?vt geo:hasGeometry <' . $locatiepuntidentifier . '> .
+    BIND(IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/verponding/1785/"), 1785, ?unbound) AS ?datering)
+  }
   ?identifier a picom:PersonReconstruction ;
               prov:wasDerivedFrom ?pv ;
               schema:name ?naam .
   OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
-  OPTIONAL { ?pv schema:datePublished ?datering }
-  OPTIONAL { ?pv prov:hadPrimarySource/rico:hasBeginningDate ?datering }
-  OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:hasBeginningDate ?datering }
 } ORDER BY ASC(?datering)
 ');
     }
