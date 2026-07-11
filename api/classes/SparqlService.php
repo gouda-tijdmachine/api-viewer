@@ -271,7 +271,8 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?geboortedatum ?overlijd
         schema:identifier ?vermeldingidentifier;
         gtm:plaatselijkeAanduiding ?plaatselijkeaanduiding .
     OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
-    BIND(COALESCE(
+    OPTIONAL { ?pv schema:dateCreated ?_dateringCreated }
+    BIND(COALESCE(?_dateringCreated,
         IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1830/"), 1830, ?unbound),
         IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1840/"), 1840, ?unbound),
         IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/verponding/1785/"), 1785, ?unbound)
@@ -305,13 +306,13 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?geboortedatum ?overlijd
   }
   UNION
   {
-    # verponding, locatiepunt gekoppeld aan het verponding-item
+    # verponding, locatiepunt gekoppeld aan het verponding-item; het
+    # registratiejaar staat als schema:dateCreated op de vermelding
     ?pv a picom:PersonObservation ;
-        gtm:verponding ?vt ;
-        schema:identifier ?vermeldingidentifier .
+        gtm:verponding ?vt .
     ?vt geo:hasGeometry ?locatiepunt ' . $straatfilter . ' .
     OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
-    BIND(IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/verponding/1785/"), 1785, ?unbound) AS ?datering) ' . $tijdvakfilter . '
+    OPTIONAL { ?pv schema:dateCreated ?datering } ' . $tijdvakfilter . '
     FILTER(ISIRI(?locatiepunt))
   }
   # vermelding -> persoonsreconstructie
@@ -687,10 +688,14 @@ SELECT * WHERE {
     FILTER(ISIRI(?locatiepunt))
   }
   OPTIONAL { ?pv picom:hasAge ?hasAge }
-  # een adresboek is een momentopname: publicatiejaar = begin- én eindjaar
-  # (anders zou de weergave er "1891 - nu" van maken)
+  # een adresboek/verponding-regel is een momentopname: registratiejaar =
+  # begin- én eindjaar (anders zou de weergave er "1891 - nu" van maken)
   OPTIONAL { ?pv schema:datePublished ?beginDate }
   OPTIONAL { ?pv schema:datePublished ?endDate }
+  OPTIONAL { ?pv schema:dateCreated ?beginDate }
+  OPTIONAL { ?pv schema:dateCreated ?endDate }
+  # verponding: het verponding-item is de bron (geen hadPrimarySource)
+  OPTIONAL { ?pv gtm:verponding ?_vt . ?_vt schema:name ?bronNaam . BIND(STR(?_vt) AS ?bronUrl) }
   OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:hasBeginningDate ?beginDate }
   OPTIONAL { ?pv prov:hadPrimarySource/rico:hasBeginningDate ?beginDate }
   OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:hasEndDate ?endDate }
@@ -776,7 +781,8 @@ SELECT DISTINCT ?identifier ?naam ?beroep ?datering WHERE {
         gtm:plaatselijkeAanduiding ?pa ;
         schema:identifier ?vermeldingidentifier .
     ?pa geo:hasGeometry <' . $locatiepuntidentifier . '> .
-    BIND(COALESCE(
+    OPTIONAL { ?pv schema:dateCreated ?_dateringCreated }
+    BIND(COALESCE(?_dateringCreated,
         IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1830/"), 1830, ?unbound),
         IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1840/"), 1840, ?unbound),
         IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/verponding/1785/"), 1785, ?unbound)
@@ -784,12 +790,12 @@ SELECT DISTINCT ?identifier ?naam ?beroep ?datering WHERE {
   }
   UNION
   {
-    # verponding: locatiepunt op het verponding-item
+    # verponding: locatiepunt op het verponding-item; het registratiejaar
+    # staat als schema:dateCreated op de vermelding (1772)
     ?pv a picom:PersonObservation ;
-        gtm:verponding ?vt ;
-        schema:identifier ?vermeldingidentifier .
+        gtm:verponding ?vt .
     ?vt geo:hasGeometry <' . $locatiepuntidentifier . '> .
-    BIND(IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/verponding/1785/"), 1785, ?unbound) AS ?datering)
+    OPTIONAL { ?pv schema:dateCreated ?datering }
   }
   ?identifier a picom:PersonReconstruction ;
               prov:wasDerivedFrom ?pv ;

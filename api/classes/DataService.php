@@ -373,6 +373,17 @@ class DataService
                 $info['eind']
             );
 
+            # geen adres in die periode (bv. verponding 1772, adressen
+            # beginnen later): val terug op de meest recente adresnaam
+            if (empty($pandnaam)) {
+                $recent = $this->sparqlService->get_adressen_locatiepunt($locatiepunt, 1);
+                if (!empty($recent[0]['naam']['value'])) {
+                    $adresNaam = preg_replace("/, wijk.*/", "", $recent[0]['naam']['value']);
+                    $adresNaam = preg_replace("/ \([0-9]{4}.*$/", "", $adresNaam);
+                    $pandnaam = "meest recent bekend als " . $adresNaam;
+                }
+            }
+
             $panden[$locatiepunt] = [
                 'identifier' => $locatiepunt,
                 'naam' => $pandnaam ?? null,
