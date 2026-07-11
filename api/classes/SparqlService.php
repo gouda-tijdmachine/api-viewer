@@ -667,7 +667,10 @@ SELECT * WHERE {
     FILTER(ISIRI(?locatiepunt))
   }
   OPTIONAL { ?pv picom:hasAge ?hasAge }
+  # een adresboek is een momentopname: publicatiejaar = begin- én eindjaar
+  # (anders zou de weergave er "1891 - nu" van maken)
   OPTIONAL { ?pv schema:datePublished ?beginDate }
+  OPTIONAL { ?pv schema:datePublished ?endDate }
   OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:hasBeginningDate ?beginDate }
   OPTIONAL { ?pv prov:hadPrimarySource/rico:hasBeginningDate ?beginDate }
   OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:hasEndDate ?endDate }
