@@ -261,7 +261,7 @@ ORDER BY ?naam ?straat');
         }
 
         return $this->SPARQL('
-SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering WHERE {
+SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?geboortedatum ?overlijdensdatum WHERE {
   ' . $toptienfilter . '
   {
     # volkstelling / verponding
@@ -307,6 +307,8 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering WHERE {
   ?identifier a picom:PersonReconstruction ;
               prov:wasDerivedFrom ?pv ;
               schema:name ?naam . ' . $searchfilter . '
+  OPTIONAL { ?identifier schema:birthDate ?geboortedatum }
+  OPTIONAL { ?identifier schema:deathDate ?overlijdensdatum }
 } ORDER BY ?naam ?datering');
     }
 

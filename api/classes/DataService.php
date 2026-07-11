@@ -169,9 +169,27 @@ class DataService
                     'identifier' => $id,
                     'naam' => $persoon['naam']['value'] ?? '',
                     'beroep' => !empty($persoon['beroep']['value']) ? $this->formatters->beroepFormatter($persoon['beroep']['value']) : null,
-                    'datering' => $persoon['datering']['value'] ?? null,
-                    'pandidentifiers' => []
+                    'datering' => null,
+                    'pandidentifiers' => [],
+                    '_jaren' => []
                 ];
+
+                # datering = geboorte–overlijdensjaar van de reconstructie;
+                # is geen van beide bekend, dan als fallback het bereik van de
+                # vermeldingsjaren (verzameld over alle rijen, zie onder)
+                $geb = substr($persoon['geboortedatum']['value'] ?? '', 0, 4);
+                $ovl = substr($persoon['overlijdensdatum']['value'] ?? '', 0, 4);
+                if ($geb !== '' || $ovl !== '') {
+                    $filtered[$id]['datering'] = $geb . '–' . $ovl;
+                }
+            }
+
+            if ($filtered[$id]['beroep'] === null && !empty($persoon['beroep']['value'])) {
+                $filtered[$id]['beroep'] = $this->formatters->beroepFormatter($persoon['beroep']['value']);
+            }
+
+            if ($filtered[$id]['datering'] === null && !empty($persoon['datering']['value'])) {
+                $filtered[$id]['_jaren'][] = (int) substr($persoon['datering']['value'], 0, 4);
             }
 
             # een persoonsreconstructie kan via meerdere vermeldingen aan
@@ -181,6 +199,16 @@ class DataService
                 $filtered[$id]['pandidentifiers'][] = $persoon['locatiepunt']['value'];
             }
         }
+
+        foreach ($filtered as &$item) {
+            if ($item['datering'] === null && !empty($item['_jaren'])) {
+                $min = min($item['_jaren']);
+                $max = max($item['_jaren']);
+                $item['datering'] = $min === $max ? (string) $min : $min . '–' . $max;
+            }
+            unset($item['_jaren']);
+        }
+        unset($item);
 
         $results = array_values($filtered);
         $sliced_results = array_slice($results, $offset, $limit);

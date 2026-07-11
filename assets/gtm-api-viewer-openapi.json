@@ -1228,7 +1228,8 @@
                     },
                      "datering": {
                         "type": "string",
-                        "example": "1830"
+                        "description": "Geboorte–overlijdensjaar van de persoon (\"1818–1907\", of \"1818–\"/\"–1907\" bij één bekende datum); als geen van beide bekend is: het (bereik van) vermeldingsjaar/-jaren (\"1880\" of \"1860–1903\").",
+                        "example": "1818–1907"
                     },
                     "pandidentifiers": {
                         "type": "array",
