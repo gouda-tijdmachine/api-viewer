@@ -285,13 +285,16 @@ class DataService
         }
         $eerste = $rows[0];
 
-        $panden = [];
+        # per pand alle (unieke) bronnen verzamelen: een persoon kan meerdere
+        # vermeldingen op hetzelfde pand hebben (bv. adresboek 1871 én
+        # bevolkingsregister 1880) en die bronnen horen allemaal getoond
+        $perPand = [];
         $leeftijd = null;
         foreach ($rows as $persoon) {
             $leeftijd = $leeftijd ?? ($persoon['hasAge']['value'] ?? null);
 
             $locatiepunt = $persoon['locatiepunt']['value'] ?? null;
-            if (empty($locatiepunt) || isset($panden[$locatiepunt])) {
+            if (empty($locatiepunt)) {
                 continue;
             }
 
@@ -321,17 +324,36 @@ class DataService
                 'url' => $persoon['bronUrl']['value'] ?? null
             ];
 
-            // adres = "pandnaam"
+            if (!isset($perPand[$locatiepunt])) {
+                $perPand[$locatiepunt] = ['bronnen' => [], 'begin' => null, 'eind' => null];
+            }
+            $bronKey = ($bron['naam'] ?? '') . '|' . ($bron['url'] ?? '') . '|' . $bron['datering'];
+            $perPand[$locatiepunt]['bronnen'][$bronKey] = $bron;
+
+            $begin = $persoon['beginDate']['value'] ?? null;
+            $eind = $persoon['endDate']['value'] ?? $begin;
+            if ($begin !== null) {
+                $perPand[$locatiepunt]['begin'] = min($perPand[$locatiepunt]['begin'] ?? $begin, $begin);
+                $perPand[$locatiepunt]['eind'] = max($perPand[$locatiepunt]['eind'] ?? $eind, $eind);
+            }
+        }
+
+        $panden = [];
+        foreach ($perPand as $locatiepunt => $info) {
+            $bronnen = array_values($info['bronnen']);
+            usort($bronnen, fn ($a, $b) => strcmp($a['datering'], $b['datering']));
+
+            // adres = "pandnaam", over de volledige vermeldingsperiode
             list($pandnaam, $straaturi) = $this->sparqlService->get_adres_jaar(
                 $locatiepunt,
-                $persoon['beginDate']['value'] ?? null,
-                $persoon['endDate']['value'] ?? null
+                $info['begin'],
+                $info['eind']
             );
 
             $panden[$locatiepunt] = [
                 'identifier' => $locatiepunt,
                 'naam' => $pandnaam ?? null,
-                'bron' => $bron
+                'bron' => $bronnen
             ];
         }
 
