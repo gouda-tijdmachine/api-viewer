@@ -39,7 +39,7 @@ class CacheService
         }
     }
 
-    public function put($key, $value, $seconds = 3600)
+    public function put($key, $value, $seconds = CACHE_DURATION_SECONDS)
     {
         if (!CACHE_ENABLED) {
             return null;

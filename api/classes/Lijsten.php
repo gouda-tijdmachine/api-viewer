@@ -26,6 +26,10 @@ class Lijsten
 
     public function get_tijdvak($tijdvakidentifier): ?array
     {
+        if ($tijdvakidentifier === null) {
+            return null;
+        }
+
         return $this->tijdvakken[$tijdvakidentifier] ?? null;
     }
 
