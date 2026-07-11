@@ -442,7 +442,10 @@ SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?straatnaam ?vervaardiger ?da
       o:media/o:source ?_thumbnail .
       BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
     ' . $searchfilter . $tijdvakfilter . '
-    OPTIONAL { ?identifier schema:creator ?vervaardiger . }  
+    # vervaardiger kan een (blank) node met naam, een literal of een URI zijn
+    OPTIONAL { ?identifier schema:creator ?_maker .
+      OPTIONAL { ?_maker (schema:name|o:label) ?_makerNaam }
+      BIND(COALESCE(?_makerNaam, IF(isLiteral(?_maker), ?_maker, IF(isIRI(?_maker), STR(?_maker), ?_onbekend))) AS ?vervaardiger) }
   }
   {
     ?locatiepunt a geo:Geometry ;
@@ -484,11 +487,12 @@ SELECT DISTINCT ?identifier ?titel ?url ?thumbnail ?vervaardiger ?datering ?stra
       o:media/o:source ?_thumbnail .
       BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
 
+    # vervaardiger kan een (blank) node met naam, een literal of een URI zijn
+    OPTIONAL { ?identifier schema:creator ?_maker .
+      OPTIONAL { ?_maker (schema:name|o:label) ?_makerNaam }
+      BIND(COALESCE(?_makerNaam, IF(isLiteral(?_maker), ?_maker, IF(isIRI(?_maker), STR(?_maker), ?_onbekend))) AS ?vervaardiger) }
     OPTIONAL {
-      ?identifier schema:creator ?vervaardiger .
-    }
-    OPTIONAL {
-      ?identifier schema:spatialCoverage/schema:geo/geo:hasGeometry/osm:area ?area 
+      ?identifier schema:spatialCoverage/schema:geo/geo:hasGeometry/osm:area ?area
     }
   }
   FILTER(geof:sfIntersects(?WKT1, ?WKT2))
@@ -514,7 +518,10 @@ SELECT * WHERE {
         #o:media/schema:thumbnailUrl ?thumbnail .
       o:media/o:source ?_thumbnail .
       BIND (replace(?_thumbnail, "(https://.*?/[0-9a-f\\\\-]+)/info.json", "$1/full/200,200/0/default.jpg") AS ?thumbnail)
-    OPTIONAL { ?identifier schema:creator ?vervaardiger }
+    # vervaardiger kan een (blank) node met naam, een literal of een URI zijn
+    OPTIONAL { ?identifier schema:creator ?_maker .
+      OPTIONAL { ?_maker (schema:name|o:label) ?_makerNaam }
+      BIND(COALESCE(?_makerNaam, IF(isLiteral(?_maker), ?_maker, IF(isIRI(?_maker), STR(?_maker), ?_onbekend))) AS ?vervaardiger) }
     OPTIONAL { ?identifier gtm:informatieAuteursRechten ?informatieAuteursRechten }
     OPTIONAL { ?identifier schema:dateCreated ?datering }
   }
