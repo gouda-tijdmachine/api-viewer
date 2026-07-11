@@ -266,13 +266,16 @@ test_json_endpoint "GET" "$BASE_URL/pand/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%
 test_json_endpoint "GET" "$BASE_URL/pand" 400 "Geef detailinformatie over pand zonder identifier"
 test_json_endpoint "GET" "$BASE_URL/pand/https%3A%2F%2Fexample.com%2FbVQ1Wc3" 400 "Geef detailinformatie over pand met geldige URL maar geen ARK identifier"
 
-# GET /persoon/{identifier}
+# GET /persoon/{identifier} — persoonsreconstructies (sinds 2026-07-11);
+# een persoonsvermelding-ARK blijft resolven naar de bijbehorende reconstructie
 print_test_header "Detailinformatie - GET /persoon/{identifier} "
-test_json_endpoint "GET" "$BASE_URL/persoon/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2Fb8KpBLy" 200 "Geef detailinformatie over persoon"
+test_json_endpoint "GET" "$BASE_URL/persoon/https%3A%2F%2Fwww.goudatijdmachine.nl%2Fid%2Freconstructie-c2ecbef2-5eee-4811-808b-687201cbebaa" 200 "Geef detailinformatie over persoon (reconstructie-URI)"
+test_json_endpoint "GET" "$BASE_URL/persoon/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2Fb8KpBLy" 200 "Geef detailinformatie over persoon (vermelding-ARK resolvet naar reconstructie)"
 test_json_endpoint "GET" "$BASE_URL/persoon/invalid-identifier" 400 "Geef detailinformatie over persoon met ongeldige identifier"
 test_json_endpoint "GET" "$BASE_URL/persoon/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2Fnotfound" 404 "Geef detailinformatie over persoon met niet bestaande identifier"
+test_json_endpoint "GET" "$BASE_URL/persoon/https%3A%2F%2Fwww.goudatijdmachine.nl%2Fid%2Freconstructie-00000000-0000-0000-0000-000000000000" 404 "Geef detailinformatie over persoon met niet bestaande reconstructie-URI"
 test_json_endpoint "GET" "$BASE_URL/persoon" 400 "Geef detailinformatie over persoon zonder identifier"
-test_json_endpoint "GET" "$BASE_URL/persoon/https%3A%2F%2Fexample.com%2Fb8KpBLy" 400 "Geef detailinformatie over persoon met geldige URL maar geen ARK identifier"
+test_json_endpoint "GET" "$BASE_URL/persoon/https%3A%2F%2Fexample.com%2Fb8KpBLy" 400 "Geef detailinformatie over persoon met geldige URL maar geen ARK of reconstructie identifier"
 
 # ** HTTP check
 

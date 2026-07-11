@@ -146,9 +146,11 @@ class ApiHandler
     {
         try {
             $paramIdentifier = $params['identifier'] ?? null;
+            # persoon-identifiers zijn persoonsreconstructie-URI's; een
+            # vermelding-ARK blijft toegestaan (resolvet naar de reconstructie)
             $identifier = (!empty($paramIdentifier) && $paramIdentifier !== '{identifier}')
-                ? $this->validateAndDecodeIdentifier($paramIdentifier)
-                : $this->validateAndDecodeIdentifier(ResponseHelper::getQueryParam('identifier'));
+                ? $this->validateAndDecodeIdentifier($paramIdentifier, true)
+                : $this->validateAndDecodeIdentifier(ResponseHelper::getQueryParam('identifier'), true);
             if ($identifier === null) {
                 return;
             }
@@ -288,7 +290,7 @@ class ApiHandler
         return true;
     }
 
-    private function validateAndDecodeIdentifier(?string $identifier): ?string
+    private function validateAndDecodeIdentifier(?string $identifier, bool $allowReconstructie = false): ?string
     {
         if (empty($identifier)) {
             ResponseHelper::error('Missende of ongeldige identifier.', 400, 'MISSING_IDENTIFIER');
@@ -298,7 +300,9 @@ class ApiHandler
 
         $identifier = urldecode($identifier);
 
-        if (!filter_var($identifier, FILTER_VALIDATE_URL) || !$this->startsWithArk($identifier)) {
+        $geldigPrefix = $this->startsWithArk($identifier)
+            || ($allowReconstructie && $this->startsWithReconstructie($identifier));
+        if (!filter_var($identifier, FILTER_VALIDATE_URL) || !$geldigPrefix) {
             ResponseHelper::error('Missende of ongeldige identifier.', 400, 'INVALID_IDENTIFIER');
 
             return null;
@@ -310,6 +314,13 @@ class ApiHandler
     private function startsWithArk(string $url): bool
     {
         $prefix = "https://n2t.net/ark:/60537/";
+
+        return str_starts_with($url, $prefix);
+    }
+
+    private function startsWithReconstructie(string $url): bool
+    {
+        $prefix = "https://www.goudatijdmachine.nl/id/reconstructie-";
 
         return str_starts_with($url, $prefix);
     }

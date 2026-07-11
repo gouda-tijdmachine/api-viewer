@@ -49,6 +49,13 @@ class SparqlService
             if ($contents === null) {
                 return null;
             }
+            # alleen valide JSON cachen: een endpoint-storing (bv. 503-HTML
+            # tijdens een QLever-reindex) mag geen 14 dagen in de cache blijven
+            if (json_decode($contents, true) === null) {
+                error_log("SPARQL response is geen JSON (endpoint-storing?); niet gecachet");
+
+                return null;
+            }
             $this->cache->put($cache_key, $contents);
         }
 
@@ -217,6 +224,95 @@ ORDER BY ?naam ?straat');
     }
 
     public function get_personen_index($q, $straatidentifier, $tijdvak = null): array
+    {
+        # Retourneert persoonsRECONSTRUCTIES (sinds 2026-07-11): de drie
+        # vermelding-takken (volkstelling/verponding, adresboeken,
+        # bevolkingsregister) blijven het anker voor pand en datering, maar
+        # identifier en naam komen van de reconstructie waar de vermelding
+        # via prov:wasDerivedFrom onder valt. Zoeken gaat op de canonieke
+        # reconstructienaam.
+        $tijdvakfilter = !empty($tijdvak) ? ' FILTER(?datering>="' . $tijdvak[0] . '"^^xsd:gYear && ?datering<="' . $tijdvak[1] . '"^^xsd:gYear ) ' : '';
+        $straatfilter = "";
+        if (!empty($straatidentifier)) { // zoek op q met straat
+            $straatfilter = "; gtm:straat <" . $straatidentifier . "> ";
+        }
+        $searchfilter = "";
+        $toptienfilter = "";
+        if (!empty($q)) {
+            $searchfilter = ' FILTER(CONTAINS(LCASE(?naam), "' . addslashes(strtolower($q)) . '"))';
+        } else {
+            if (empty($straatidentifier)) {
+                # tien interessante personen, aangewezen via hun vermelding
+                # (de reconstructie-URI volgt via prov:wasDerivedFrom)
+                $topTien = [
+                  "https://n2t.net/ark:/60537/b01dp31",
+                  "https://n2t.net/ark:/60537/b003nsh",
+                  "https://n2t.net/ark:/60537/b01dqqv",
+                  "https://n2t.net/ark:/60537/b003q2k",
+                  "https://n2t.net/ark:/60537/b01dr7f",
+                  "https://n2t.net/ark:/60537/b62kMd",
+                  "https://n2t.net/ark:/60537/b003q9g",
+                  "https://n2t.net/ark:/60537/b003nqp",
+                  "https://n2t.net/ark:/60537/b003qnm",
+                  "https://n2t.net/ark:/60537/b01dt3j"
+                ];
+                $toptienfilter = "VALUES ?pv { <" . implode("> <", $topTien) . "> } ";
+            }
+        }
+
+        return $this->SPARQL('
+SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering WHERE {
+  ' . $toptienfilter . '
+  {
+    # volkstelling / verponding
+    ?pv a picom:PersonObservation ;
+        schema:familyName ?familyname ;
+        schema:givenName ?givenName;
+        schema:identifier ?vermeldingidentifier;
+        gtm:plaatselijkeAanduiding ?plaatselijkeaanduiding .
+    OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
+    BIND(COALESCE(
+        IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1830/"), 1830, ?unbound),
+        IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1840/"), 1840, ?unbound),
+        IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/verponding/1785/"), 1785, ?unbound)
+      ) AS ?datering)
+    ?plaatselijkeaanduiding geo:hasGeometry ?locatiepunt ' . $straatfilter . ' . ' . $tijdvakfilter . '
+    FILTER(ISIRI(?locatiepunt))
+  }
+  UNION
+  {
+    # adresboeken, locatiepunt in persoonvermelding
+    {
+      ?pv a picom:PersonObservation ;
+          schema:datePublished ?datering ;
+          geo:hasGeometry ?locatiepunt ' . $straatfilter . ' . ' . $tijdvakfilter . '
+      OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
+      FILTER(ISIRI(?locatiepunt))
+    }
+  }
+  UNION
+  {
+    # bevolkingsregister, locatiepunt gekoppeld aan pagina br
+    ?pv a picom:PersonObservation ;
+        prov:hadPrimarySource ?source ;
+        schema:familyName ?familyname ;
+        schema:givenName ?givenName .
+    ?source geo:hasGeometry ?locatiepunt ' . $straatfilter . ' ;
+            schema:isPartOf ?partof .
+    OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
+    OPTIONAL { ?partof rico:hasBeginningDate ?datering } ' . $tijdvakfilter . '
+    FILTER(ISIRI(?locatiepunt))
+  }
+  # vermelding -> persoonsreconstructie
+  ?identifier a picom:PersonReconstruction ;
+              prov:wasDerivedFrom ?pv ;
+              schema:name ?naam . ' . $searchfilter . '
+} ORDER BY ?naam ?datering');
+    }
+
+    # backup van de persoonsvermelding-variant (vervangen door de
+    # persoonsreconstructie-variant hierboven, 2026-07-11)
+    public function get_personen_index_old($q, $straatidentifier, $tijdvak = null): array
     {
 
         $tijdvakfilter = !empty($tijdvak) ? ' FILTER(?datering>="' . $tijdvak[0] . '"^^xsd:gYear && ?datering<="' . $tijdvak[1] . '"^^xsd:gYear ) ' : '';
@@ -540,6 +636,52 @@ SELECT ?naam WHERE {
 
     public function get_persoon($identifier): array
     {
+        # Retourneert een persoonsRECONSTRUCTIE (sinds 2026-07-11). De
+        # canonieke velden (naam, geboorte, overlijden, beroep) komen van de
+        # reconstructie; panden, leeftijd en bronverwijzingen komen van de
+        # onderliggende persoonsvermeldingen (prov:wasDerivedFrom).
+        # Een vermelding-ARK blijft werken: die resolvet naar zijn reconstructie.
+        $anker = str_starts_with($identifier, 'https://www.goudatijdmachine.nl/id/reconstructie-')
+            ? 'BIND(<' . $identifier . '> AS ?identifier)'
+            : '?identifier prov:wasDerivedFrom <' . $identifier . '> .';
+
+        return $this->SPARQL('
+SELECT * WHERE {
+  ' . $anker . '
+  ?identifier a picom:PersonReconstruction ;
+              schema:name ?name ;
+              prov:wasDerivedFrom ?pv .
+  OPTIONAL { ?identifier schema:birthDate ?birthDate }
+  OPTIONAL { ?identifier schema:birthPlace ?bp . OPTIONAL { ?bp (schema:name|o:label) ?bpLabel } BIND(COALESCE(?bpLabel, STR(?bp)) AS ?birthPlace) }
+  OPTIONAL { ?identifier schema:deathDate ?deathDate }
+  OPTIONAL { ?identifier schema:deathPlace ?dp . OPTIONAL { ?dp (schema:name|o:label) ?dpLabel } BIND(COALESCE(?dpLabel, STR(?dp)) AS ?deathPlace) }
+  OPTIONAL { ?identifier schema:hasOccupation ?hasOccupation }
+  # pand(en) via de vermelding: direct (adresboek), via de plaatselijke
+  # aanduiding (volkstelling/verponding) of via de bronscan (bevolkingsregister)
+  OPTIONAL {
+    { ?pv geo:hasGeometry ?locatiepunt }
+    UNION { ?pv gtm:plaatselijkeAanduiding/geo:hasGeometry ?locatiepunt }
+    UNION { ?pv prov:hadPrimarySource/geo:hasGeometry ?locatiepunt }
+    FILTER(ISIRI(?locatiepunt))
+  }
+  OPTIONAL { ?pv picom:hasAge ?hasAge }
+  OPTIONAL { ?pv schema:datePublished ?beginDate }
+  OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:hasBeginningDate ?beginDate }
+  OPTIONAL { ?pv prov:hadPrimarySource/rico:hasBeginningDate ?beginDate }
+  OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:hasEndDate ?endDate }
+  OPTIONAL { ?pv prov:hadPrimarySource/rico:hasEndDate ?endDate }
+  OPTIONAL { ?pv prov:hadPrimarySource ?snl . ?snl (schema:name|o:label) ?bronNaam }
+  OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:identifier ?_bronInventaris . BIND(CONCAT("SAMH ", STR(?_bronInventaris)) AS ?bronInventaris) }
+  OPTIONAL { ?pv prov:hadPrimarySource/rico:identifier ?_bronInventaris . BIND(CONCAT("SAMH ", STR(?_bronInventaris)) AS ?bronInventaris) }
+  OPTIONAL { ?pv schema:isBasedOn ?bronUrl }
+  OPTIONAL { ?pv prov:hadPrimarySource ?bronUrl }
+}');
+    }
+
+    # backup van de persoonsvermelding-variant (vervangen door de
+    # persoonsreconstructie-variant hierboven, 2026-07-11)
+    public function get_persoon_old($identifier): array
+    {
         return $this->SPARQL('
 SELECT * WHERE {
   BIND(<' . $identifier . '> as ?pv)
@@ -576,6 +718,32 @@ SELECT * WHERE {
     }
 
     public function get_personen_locatiepunt($locatiepuntidentifier): array
+    {
+        # Retourneert persoonsRECONSTRUCTIES (sinds 2026-07-11): zelfde
+        # vermelding-selectie als voorheen (direct geo:hasGeometry), maar met
+        # de reconstructie als identifier/naam. Eén rij per (reconstructie,
+        # datering); DataService groepeert per reconstructie en voegt de
+        # dateringen samen ("1897, 1898, 1900"). NB: niet met GROUP_CONCAT in
+        # SPARQL — QLever laat aggregaten leeglopen zodra de groep een
+        # ongebonden OPTIONAL-waarde bevat.
+        return $this->SPARQL('
+SELECT DISTINCT ?identifier ?naam ?beroep ?datering WHERE {
+  ?pv a picom:PersonObservation ;
+      geo:hasGeometry <' . $locatiepuntidentifier . '> .
+  ?identifier a picom:PersonReconstruction ;
+              prov:wasDerivedFrom ?pv ;
+              schema:name ?naam .
+  OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
+  OPTIONAL { ?pv schema:datePublished ?datering }
+  OPTIONAL { ?pv prov:hadPrimarySource/rico:hasBeginningDate ?datering }
+  OPTIONAL { ?pv prov:hadPrimarySource/schema:isPartOf/rico:hasBeginningDate ?datering }
+} ORDER BY ASC(?datering)
+');
+    }
+
+    # backup van de persoonsvermelding-variant (vervangen door de
+    # persoonsreconstructie-variant hierboven, 2026-07-11)
+    public function get_personen_locatiepunt_old($locatiepuntidentifier): array
     {
         return $this->SPARQL('
 SELECT ?identifier ?naam ?beroep ?datering WHERE {

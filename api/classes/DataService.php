@@ -165,18 +165,20 @@ class DataService
 
             $id = $persoon['identifier']['value'];
             if (!isset($filtered[$id])) {
-                $pandidentifiers = [];
-                if (!empty($persoon['locatiepunt']['value'])) {
-                    $pandidentifiers[] = $persoon['locatiepunt']['value'];
-                }
-
                 $filtered[$id] = [
                     'identifier' => $id,
                     'naam' => $persoon['naam']['value'] ?? '',
                     'beroep' => !empty($persoon['beroep']['value']) ? $this->formatters->beroepFormatter($persoon['beroep']['value']) : null,
                     'datering' => $persoon['datering']['value'] ?? null,
-                    'pandidentifiers' => $pandidentifiers
+                    'pandidentifiers' => []
                 ];
+            }
+
+            # een persoonsreconstructie kan via meerdere vermeldingen aan
+            # meerdere panden gekoppeld zijn: verzamel ze allemaal (uniek)
+            if (!empty($persoon['locatiepunt']['value'])
+                    && !in_array($persoon['locatiepunt']['value'], $filtered[$id]['pandidentifiers'], true)) {
+                $filtered[$id]['pandidentifiers'][] = $persoon['locatiepunt']['value'];
             }
         }
 
@@ -245,65 +247,96 @@ class DataService
 
     public function getPersoon($identifier): ?array
     {
-        $persoon = $this->sparqlService->get_persoon($identifier);
+        # Sinds 2026-07-11 een persoonsRECONSTRUCTIE: één rij per onderliggende
+        # vermelding(-combinatie); canonieke velden uit de eerste rij, panden
+        # en bronnen geaggregeerd over alle rijen.
+        $rows = $this->sparqlService->get_persoon($identifier);
 
-        if (empty($persoon)) {
+        if (empty($rows)) {
             return null;
         }
-        $persoon = $persoon[0];
+        $eerste = $rows[0];
 
-        $datering = '';
-        if (!empty($persoon['beginDate']['value'])) {
-            $datering = $persoon['beginDate']['value'];
-            if (!empty($persoon['endDate']['value'])) {
-                if ($datering != $persoon['endDate']['value']) {
-                    $datering .= " – " . $persoon['endDate']['value'];
+        $panden = [];
+        $leeftijd = null;
+        foreach ($rows as $persoon) {
+            $leeftijd = $leeftijd ?? ($persoon['hasAge']['value'] ?? null);
+
+            $locatiepunt = $persoon['locatiepunt']['value'] ?? null;
+            if (empty($locatiepunt) || isset($panden[$locatiepunt])) {
+                continue;
+            }
+
+            $datering = '';
+            if (!empty($persoon['beginDate']['value'])) {
+                $datering = $persoon['beginDate']['value'];
+                if (!empty($persoon['endDate']['value'])) {
+                    if ($datering != $persoon['endDate']['value']) {
+                        $datering .= " – " . $persoon['endDate']['value'];
+                    }
+                } else {
+                    $datering .= " – nu";
                 }
             } else {
-                $datering .= " – nu";
+                $datering = "????";
+                if (!empty($persoon['bronNaam']['value']) && preg_match('/\d{4}/', $persoon['bronNaam']['value'], $matches)) {
+                    $datering = $matches[0];
+                    $persoon['beginDate']['value'] = $datering;
+                    $persoon['endDate']['value'] = $datering;
+                }
             }
-        } else {
-            $datering = "????";
-            if (!empty($persoon['bronNaam']['value']) && preg_match('/\d{4}/', $persoon['bronNaam']['value'], $matches)) {
-                $datering = $matches[0];
-                $persoon['beginDate']['value'] = $datering;
-                $persoon['endDate']['value'] = $datering;
-            }
+
+            $bron = [
+                'naam' => $persoon['bronNaam']['value'] ?? null,
+                'naam_kort' => $persoon['bronInventaris']['value'] ?? '',
+                'datering' => $datering,
+                'url' => $persoon['bronUrl']['value'] ?? null
+            ];
+
+            // adres = "pandnaam"
+            list($pandnaam, $straaturi) = $this->sparqlService->get_adres_jaar(
+                $locatiepunt,
+                $persoon['beginDate']['value'] ?? null,
+                $persoon['endDate']['value'] ?? null
+            );
+
+            $panden[$locatiepunt] = [
+                'identifier' => $locatiepunt,
+                'naam' => $pandnaam ?? null,
+                'bron' => $bron
+            ];
         }
 
-        $bron = [
-            'naam' => $persoon['bronNaam']['value'] ?? null,
-            'naam_kort' => $persoon['bronInventaris']['value'] ?? '',
-            'datering' => $datering,
-            'url' => $persoon['bronUrl']['value'] ?? null
-        ];
-
-        // adres = "pandnaam"
-        list($pandnaam, $straaturi) = $this->sparqlService->get_adres_jaar(
-            $persoon['locatiepunt']['value'] ?? null,
-            $persoon['beginDate']['value'] ?? null,
-            $persoon['endDate']['value'] ?? null
-        );
-
-        $pand = [
-            'identifier' => $persoon['locatiepunt']['value'] ?? null,
-            'naam' => $pandnaam ?? null,
-            'bron' => $bron
-        ];
-
         $persoonData = [
-            'identifier' => $identifier,
-            'naam' => $persoon['name']['value'] ?? '',
-            'geboortedatum' => !empty($persoon['birthDate']['value']) ? $this->formatters->datumFormatter($persoon['birthDate']['value']) : null,
-            'geboorteplaats' => $persoon['birthPlace']['value'] ?? null,
-            'overlijdensdatum' => !empty($persoon['deathDate']['value']) ? $this->formatters->datumFormatter($persoon['deathDate']['value']) : null,
-            'overlijdensplaats' => $persoon['deathPlace']['value'] ?? null,
-            'leeftijd' => $persoon['hasAge']['value'] ?? null,
-            'beroep' => !empty($persoon['hasOccupation']['value']) ? $this->formatters->beroepFormatter($persoon['hasOccupation']['value']) : null,
-            'panden' => [$pand]
+            'identifier' => $eerste['identifier']['value'] ?? $identifier,
+            'naam' => $eerste['name']['value'] ?? '',
+            'geboortedatum' => !empty($eerste['birthDate']['value']) ? $this->formatters->datumFormatter($eerste['birthDate']['value']) : null,
+            'geboorteplaats' => $this->plaatsLabel($eerste['birthPlace']['value'] ?? null),
+            'overlijdensdatum' => !empty($eerste['deathDate']['value']) ? $this->formatters->datumFormatter($eerste['deathDate']['value']) : null,
+            'overlijdensplaats' => $this->plaatsLabel($eerste['deathPlace']['value'] ?? null),
+            'leeftijd' => $leeftijd,
+            'beroep' => !empty($eerste['hasOccupation']['value']) ? $this->formatters->beroepFormatter($eerste['hasOccupation']['value']) : null,
+            'panden' => array_values($panden)
         ];
 
         return $persoonData;
+    }
+
+    # Plaats kan een label zijn óf een URI zonder label in de triplestore
+    # (bv. https://gemeentegeschiedenis.nl/gemeentenaam/Schiedam): in dat
+    # geval het laatste padsegment als leesbare naam gebruiken.
+    private function plaatsLabel(?string $plaats): ?string
+    {
+        if (empty($plaats)) {
+            return null;
+        }
+        if (str_starts_with($plaats, 'http://') || str_starts_with($plaats, 'https://')) {
+            $segment = rawurldecode(basename((string) parse_url($plaats, PHP_URL_PATH)));
+
+            return $segment !== '' ? $segment : $plaats;
+        }
+
+        return $plaats;
     }
 
     public function getPand($locatiepuntidentifier): ?array
@@ -327,15 +360,37 @@ class DataService
             ];
         }
 
+        # per persoonsreconstructie één regel; dateringen van de onderliggende
+        # vermeldingen samenvoegen ("1897, 1898, 1900")
         $personen = [];
         foreach ($this->sparqlService->get_personen_locatiepunt($locatiepuntidentifier) as $persoon) {
-            $personen[] = [
-                'identifier' => $persoon['identifier']['value'] ?? '',
-                'naam' => $persoon['naam']['value'] ?? '',
-                'beroep' => !empty($persoon['beroep']['value']) ? $this->formatters->beroepFormatter($persoon['beroep']['value']) : null,
-                'datering' => $persoon['datering']['value'] ?? null
-            ];
+            $id = $persoon['identifier']['value'] ?? '';
+            if ($id === '') {
+                continue;
+            }
+            $datering = $persoon['datering']['value'] ?? null;
+            if (!isset($personen[$id])) {
+                $personen[$id] = [
+                    'identifier' => $id,
+                    'naam' => $persoon['naam']['value'] ?? '',
+                    'beroep' => !empty($persoon['beroep']['value']) ? $this->formatters->beroepFormatter($persoon['beroep']['value']) : null,
+                    'datering' => $datering
+                ];
+                continue;
+            }
+            if ($personen[$id]['beroep'] === null && !empty($persoon['beroep']['value'])) {
+                $personen[$id]['beroep'] = $this->formatters->beroepFormatter($persoon['beroep']['value']);
+            }
+            if ($datering !== null) {
+                $bestaand = $personen[$id]['datering'];
+                if ($bestaand === null) {
+                    $personen[$id]['datering'] = $datering;
+                } elseif (!in_array($datering, explode(', ', $bestaand), true)) {
+                    $personen[$id]['datering'] = $bestaand . ', ' . $datering;
+                }
+            }
         }
+        $personen = array_values($personen);
 
         $adressen = [];
         $sadressen = $this->sparqlService->get_adressen_locatiepunt($locatiepuntidentifier);

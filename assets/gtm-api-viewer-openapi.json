@@ -2,8 +2,8 @@
     "openapi": "3.1.0",
     "info": {
         "title": "Gouda Tijdmachine Viewer API",
-        "description": "Deze [getestte](/test-results/) read-only REST API voorziet in de informatiebehoefte qua foto's, panden, straten en personen; alle geïdentifieerd met een persistente HTTP URI op basis van ARK.<br><br>**N.B.**: de beschikbare data betreft met name de 14 panden aan de Wijdstraat (oostzijde) zoals deze in [project Wijdstraat](https://www.goudatijdmachine.nl/project-wijdstraat/locaties/) zijn gekoppeld, dus **nog niet** geheel Gouda.",
-        "version": "v1.3.4",
+        "description": "Deze [getestte](/test-results/) read-only REST API voorziet in de informatiebehoefte qua foto's, panden, straten en personen; alle geïdentifieerd met een persistente HTTP URI (foto's, panden en straten op basis van ARK; personen als **persoonsreconstructie** met een `https://www.goudatijdmachine.nl/id/reconstructie-…`-URI, waarbij een persoonsvermelding-ARK blijft resolven naar de bijbehorende reconstructie).<br><br>**N.B.**: de beschikbare data betreft met name de 14 panden aan de Wijdstraat (oostzijde) zoals deze in [project Wijdstraat](https://www.goudatijdmachine.nl/project-wijdstraat/locaties/) zijn gekoppeld, dus **nog niet** geheel Gouda.",
+        "version": "v1.5.0",
         "contact": {
             "name": "Gouda Tijdmachine Viewer",
             "url": "https://viewer.goudatijdmachine.nl/"
@@ -426,14 +426,14 @@
                     "Detailinformatie"
                 ],
                 "summary": "Geef detailinformatie over een persoon",
-                "description":  "Geeft informatie over de gespecificeerde persoon (vooralsnog persoonsvermelding, later wellicht persoonsreconstructie), inclusief gerelateerde panden.",
+                "description":  "Geeft informatie over de gespecificeerde persoon (een **persoonsreconstructie**: alle samengebrachte persoonsvermeldingen van één historische persoon), inclusief gerelateerde panden.",
                 "parameters": [
                     {
                         "name": "identifier",
                         "in": "path",
-                        "description": "Identifier van de persoon. **Let op**: de identifier is een URI, deze moet correct ge-URL-encoded worden.",
+                        "description": "Identifier van de persoon: de URI van de persoonsreconstructie. Een persoonsvermelding-ARK wordt ook geaccepteerd en resolvet naar de bijbehorende reconstructie. **Let op**: de identifier is een URI, deze moet correct ge-URL-encoded worden.",
                         "required": true,
-                        "example": "https://n2t.net/ark:/60537/b8KpBLy",
+                        "example": "https://www.goudatijdmachine.nl/id/reconstructie-c2ecbef2-5eee-4811-808b-687201cbebaa",
                         "schema": {
                             "type": "string"
                         }
@@ -1170,8 +1170,8 @@
                     "identifier": {
                         "type": "string",
                         "format": "uri",
-                        "description": "De persistente HTTP URI van de persoon (of eigenlijk: persoonsvermelding, later de persoonsreconstructie).",
-                        "example": "https://n2t.net/ark:/60537/bywHg3"
+                        "description": "De persistente HTTP URI van de persoon (een persoonsreconstructie: alle samengebrachte persoonsvermeldingen van één historische persoon).",
+                        "example": "https://www.goudatijdmachine.nl/id/reconstructie-c2ecbef2-5eee-4811-808b-687201cbebaa"
                     },
                     "naam": {
                         "type": "string",
@@ -1215,8 +1215,8 @@
                     "identifier": {
                         "type": "string",
                         "format": "uri",
-                        "description": "De persistente HTTP URI van de persoon (of eigenlijk: persoonsvermelding, later de persoonsreconstructie).",
-                        "example": "https://n2t.net/ark:/60537/bywHg3"
+                        "description": "De persistente HTTP URI van de persoon (een persoonsreconstructie: alle samengebrachte persoonsvermeldingen van één historische persoon).",
+                        "example": "https://www.goudatijdmachine.nl/id/reconstructie-c2ecbef2-5eee-4811-808b-687201cbebaa"
                     },
                     "naam": {
                         "type": "string",
