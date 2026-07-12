@@ -266,6 +266,23 @@ test_json_endpoint "GET" "$BASE_URL/pand/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%
 test_json_endpoint "GET" "$BASE_URL/pand" 400 "Geef detailinformatie over pand zonder identifier"
 test_json_endpoint "GET" "$BASE_URL/pand/https%3A%2F%2Fexample.com%2FbVQ1Wc3" 400 "Geef detailinformatie over pand met geldige URL maar geen ARK identifier"
 
+# v1.6.0: panddetail bevat de puntgeometrie van het locatiepunt
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+echo -e "\n${YELLOW}Test $TOTAL_TESTS: Panddetail bevat geometrie (GeoJSON-punt)${NC}"
+echo "<h3>Test $TOTAL_TESTS: Panddetail bevat geometrie (GeoJSON-punt)</h3>" >> $TESTHTML
+body=$(curl -s "$BASE_URL/pand/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2FbVQ1Wc3")
+if echo "$body" | jq -e '.geometrie.type == "Point"' > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ PASS${NC}"
+    echo "<ul class='pass'>" >> $TESTHTML
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo -e "${RED}✗ FAIL (geen geometrie.type == \"Point\" in response)${NC}"
+    echo "<ul class='fail'>" >> $TESTHTML
+fi
+echo "<li><strong>Request</strong>: GET <a href=\"$BASE_URL/pand/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2FbVQ1Wc3\">$BASE_URL/pand/https%3A%2F%2Fn2t.net%2Fark%3A%2F60537%2FbVQ1Wc3</a></li>" >> $TESTHTML
+echo "<li><strong>Check</strong>: .geometrie.type == \"Point\"</li>" >> $TESTHTML
+echo "</ul>" >> $TESTHTML
+
 # GET /persoon/{identifier} — persoonsreconstructies (sinds 2026-07-11);
 # een persoonsvermelding-ARK blijft resolven naar de bijbehorende reconstructie
 print_test_header "Detailinformatie - GET /persoon/{identifier} "

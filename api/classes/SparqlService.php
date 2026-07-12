@@ -652,10 +652,12 @@ SELECT DISTINCT ?identifier ?titel ?thumbnail ?datering ?type WHERE {
     public function get_pand($locatiepuntidentifier): array
     {
         # TODO: volgens OpenAPI requirement ook datering toevoegen
+        # het locatiepunt draagt zelf een POINT-geometrie (geo:hasGeometry/geo:asWKT)
         return $this->SPARQL('
-SELECT ?naam WHERE {
+SELECT ?naam ?wkt WHERE {
   <' . $locatiepuntidentifier . '>  schema:name ?naam
-} ');
+  OPTIONAL { <' . $locatiepuntidentifier . '> geo:hasGeometry/geo:asWKT ?wkt }
+} LIMIT 1');
     }
 
     public function get_persoon($identifier): array

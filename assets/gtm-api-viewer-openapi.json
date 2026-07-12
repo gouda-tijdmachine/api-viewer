@@ -3,7 +3,7 @@
     "info": {
         "title": "Gouda Tijdmachine Viewer API",
         "description": "Deze [getestte](/test-results/) read-only REST API voorziet in de informatiebehoefte qua foto's, panden, straten en personen; alle geïdentifieerd met een persistente HTTP URI (foto's, panden en straten op basis van ARK; personen als **persoonsreconstructie** met een `https://www.goudatijdmachine.nl/id/reconstructie-…`-URI, waarbij een persoonsvermelding-ARK blijft resolven naar de bijbehorende reconstructie).<br><br>**N.B.**: de beschikbare data betreft met name de 14 panden aan de Wijdstraat (oostzijde) zoals deze in [project Wijdstraat](https://www.goudatijdmachine.nl/project-wijdstraat/locaties/) zijn gekoppeld, dus **nog niet** geheel Gouda.",
-        "version": "v1.5.0",
+        "version": "v1.6.0",
         "contact": {
             "name": "Gouda Tijdmachine Viewer",
             "url": "https://viewer.goudatijdmachine.nl/"
@@ -195,7 +195,7 @@
                     "Detailinformatie"
                 ],
                 "summary": "Geef detailinformatie over een pand",
-                "description": "Geeft informatie over het gespecificeerde pand (lees: locatiepunt), inclusief gerelateerde adressen, personen en (max. 10) foto's. De personen (persoonsreconstructies) komen uit alle gekoppelde bronnen: adresboeken, bevolkingsregister, volkstellingen 1830/1840, het verpondingsregister en de Oorspronkelijke Aanwijzende Tafel (kadaster 1832).",
+                "description": "Geeft informatie over het gespecificeerde pand (lees: locatiepunt), inclusief de puntgeometrie (GeoJSON) van het locatiepunt en gerelateerde adressen, personen en (max. 10) foto's. De personen (persoonsreconstructies) komen uit alle gekoppelde bronnen: adresboeken, bevolkingsregister, volkstellingen 1830/1840, het verpondingsregister en de Oorspronkelijke Aanwijzende Tafel (kadaster 1832).",
                 "parameters": [
                     {
                         "name": "identifier",
@@ -1096,6 +1096,14 @@
                     "datering": {
                         "type": "string",
                         "example": "TODO 1435-1740"
+                    },
+                    "geometrie": {
+                        "description": "GeoJSON-punt van het locatiepunt; ontbreekt als er geen geometrie bekend is.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/GeoJSONPoint"
+                            }
+                        ]
                     },
                     "adressen": {
                         "type": "array",

@@ -553,6 +553,16 @@ class DataService
             'fotos' => $fotos
         ];
 
+        # GeoJSON-punt van het locatiepunt; alleen opnemen als er echt een
+        # POINT bekend is (afwijkende WKT-typen wegfilteren)
+        if (!empty($pand['wkt']['value'])) {
+            $geom = $this->geoPHP->load($pand['wkt']['value'], 'wkt');
+            $decoded = $geom ? json_decode($geom->out('json')) : null;
+            if (!empty($decoded->type) && $decoded->type === 'Point') {
+                $filtered['geometrie'] = $decoded;
+            }
+        }
+
         return $filtered;
     }
 
