@@ -269,9 +269,7 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?geboortedatum ?overlijd
         schema:familyName ?familyname ;
         schema:givenName ?givenName;
         schema:identifier ?vermeldingidentifier;
-        gtm:plaatselijkeAanduiding ?plaatselijkeaanduiding .
-    OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
-    OPTIONAL { ?pv schema:dateCreated ?_dateringCreated }
+        gtm:plaatselijkeAanduiding ?plaatselijkeaanduiding .    OPTIONAL { ?pv schema:dateCreated ?_dateringCreated }
     BIND(COALESCE(?_dateringCreated,
         IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1830/"), 1830, ?unbound),
         IF(STRSTARTS(STR(?vermeldingidentifier), "https://www.goudatijdmachine.nl/id/index/volkstelling1840/"), 1840, ?unbound),
@@ -286,9 +284,7 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?geboortedatum ?overlijd
     {
       ?pv a picom:PersonObservation ;
           schema:datePublished ?datering ;
-          geo:hasGeometry ?locatiepunt ' . $straatfilter . ' . ' . $tijdvakfilter . '
-      OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
-      FILTER(ISIRI(?locatiepunt))
+          geo:hasGeometry ?locatiepunt ' . $straatfilter . ' . ' . $tijdvakfilter . '      FILTER(ISIRI(?locatiepunt))
     }
   }
   UNION
@@ -299,9 +295,7 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?geboortedatum ?overlijd
         schema:familyName ?familyname ;
         schema:givenName ?givenName .
     ?source geo:hasGeometry ?locatiepunt ' . $straatfilter . ' ;
-            schema:isPartOf ?partof .
-    OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
-    OPTIONAL { ?partof rico:hasBeginningDate ?datering } ' . $tijdvakfilter . '
+            schema:isPartOf ?partof .    OPTIONAL { ?partof rico:hasBeginningDate ?datering } ' . $tijdvakfilter . '
     FILTER(ISIRI(?locatiepunt))
   }
   UNION
@@ -310,9 +304,7 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?geboortedatum ?overlijd
     # registratiejaar staat als schema:dateCreated op de vermelding
     ?pv a picom:PersonObservation ;
         gtm:verponding ?vt .
-    ?vt geo:hasGeometry ?locatiepunt ' . $straatfilter . ' .
-    OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
-    OPTIONAL { ?pv schema:dateCreated ?datering } ' . $tijdvakfilter . '
+    ?vt geo:hasGeometry ?locatiepunt ' . $straatfilter . ' .    OPTIONAL { ?pv schema:dateCreated ?datering } ' . $tijdvakfilter . '
     FILTER(ISIRI(?locatiepunt))
   }
   UNION
@@ -321,15 +313,15 @@ SELECT ?identifier ?locatiepunt ?naam ?beroep ?datering ?geboortedatum ?overlijd
     # (1832) staat als schema:dateCreated op de vermelding
     ?pv a picom:PersonObservation ;
         gtm:kadastraleAanduiding ?perceel .
-    ?perceel geo:hasGeometry ?locatiepunt ' . $straatfilter . ' .
-    OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
-    OPTIONAL { ?pv schema:dateCreated ?datering } ' . $tijdvakfilter . '
+    ?perceel geo:hasGeometry ?locatiepunt ' . $straatfilter . ' .    OPTIONAL { ?pv schema:dateCreated ?datering } ' . $tijdvakfilter . '
     FILTER(ISIRI(?locatiepunt))
   }
   # vermelding -> persoonsreconstructie
   ?identifier a picom:PersonReconstruction ;
               prov:wasDerivedFrom ?pv ;
               schema:name ?naam . ' . $searchfilter . '
+  # beroep canoniek van de reconstructie (consistent met de persoon-detail)
+  OPTIONAL { ?identifier schema:hasOccupation ?beroep }
   OPTIONAL { ?identifier schema:birthDate ?geboortedatum }
   OPTIONAL { ?identifier schema:deathDate ?overlijdensdatum }
 } ORDER BY ?naam ?datering');
@@ -823,7 +815,8 @@ SELECT DISTINCT ?identifier ?naam ?beroep ?datering WHERE {
   ?identifier a picom:PersonReconstruction ;
               prov:wasDerivedFrom ?pv ;
               schema:name ?naam .
-  OPTIONAL { ?pv schema:additionalType [ a schema:Occupation ; schema:name ?beroep ] }
+  # beroep canoniek van de reconstructie (consistent met de persoon-detail)
+  OPTIONAL { ?identifier schema:hasOccupation ?beroep }
 } ORDER BY ASC(?datering)
 ');
     }

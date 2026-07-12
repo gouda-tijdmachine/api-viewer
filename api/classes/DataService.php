@@ -25,6 +25,35 @@ class DataService
         $this->cache = new CacheService();
     }
 
+    # "geen beroep"-varianten; een écht beroep uit een andere vermelding
+    # verdient de voorkeur in lijstweergaven
+    private const GEEN_BEROEP = ['geen', 'zonder', 'geen beroep', 'zonder beroep',
+        'zonder beroep of bezigheid', 'geen beroep of bezigheid'];
+
+    private function isGeenBeroep(?string $beroep): bool
+    {
+        return $beroep === null
+            || in_array(strtolower(trim($beroep, " .")), self::GEEN_BEROEP, true);
+    }
+
+    # deterministische keuze bij meerdere beroepen per reconstructie: een écht
+    # beroep wint van een "geen beroep"-variant, en het langste (meest
+    # specifieke, "koopman in manufacturen" > "koopman") wint daarbinnen
+    private function beterBeroep(?string $huidig, ?string $nieuw): ?string
+    {
+        if (empty($nieuw)) {
+            return $huidig;
+        }
+        if ($this->isGeenBeroep($huidig)) {
+            return $this->isGeenBeroep($nieuw) ? ($huidig ?? $nieuw) : $nieuw;
+        }
+        if (!$this->isGeenBeroep($nieuw) && strlen($nieuw) > strlen($huidig)) {
+            return $nieuw;
+        }
+
+        return $huidig;
+    }
+
     public function getStraten(): array
     {
         $straten = $this->sparqlService->get_straten();
@@ -184,8 +213,9 @@ class DataService
                 }
             }
 
-            if ($filtered[$id]['beroep'] === null && !empty($persoon['beroep']['value'])) {
-                $filtered[$id]['beroep'] = $this->formatters->beroepFormatter($persoon['beroep']['value']);
+            $beter = $this->beterBeroep($filtered[$id]['beroep'], $persoon['beroep']['value'] ?? null);
+            if ($beter !== $filtered[$id]['beroep']) {
+                $filtered[$id]['beroep'] = $this->formatters->beroepFormatter($beter);
             }
 
             if ($filtered[$id]['datering'] === null && !empty($persoon['datering']['value'])) {
@@ -462,8 +492,9 @@ class DataService
                 ];
                 continue;
             }
-            if ($personen[$id]['beroep'] === null && !empty($persoon['beroep']['value'])) {
-                $personen[$id]['beroep'] = $this->formatters->beroepFormatter($persoon['beroep']['value']);
+            $beter = $this->beterBeroep($personen[$id]['beroep'], $persoon['beroep']['value'] ?? null);
+            if ($beter !== $personen[$id]['beroep']) {
+                $personen[$id]['beroep'] = $this->formatters->beroepFormatter($beter);
             }
             if ($datering !== null) {
                 $bestaand = $personen[$id]['datering'];
